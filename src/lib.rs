@@ -46,6 +46,24 @@ impl Koral {
     }
 }
 
+impl App for Koral {
+    fn name(&self) -> String {
+        self.name.clone()
+    }
+
+    fn action(&self, args: Vec<String>) {
+        (self.action)(args);
+    }
+
+    fn run(&self, args: Vec<String>) {
+        self.action(args);
+    }
+
+    fn flags(&self) -> Vec<String> {
+        vec![]
+    }
+}
+
 pub trait App {
     fn name(&self) -> String;
     fn action(&self, args: Vec<String>);
