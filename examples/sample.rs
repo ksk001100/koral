@@ -7,7 +7,13 @@ fn main() {
         .app(Box::new(Command::Mul))
         .app(Box::new(Command::Div));
 
-    koral.run(std::env::args().collect());
+    match koral.run(std::env::args().collect()) {
+        Ok(_) => {},
+        Err(e) => {
+            eprintln!("{}", e);
+            std::process::exit(1);
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -28,7 +34,7 @@ impl App for Command {
         }
     } 
 
-    fn action(&self, args: Vec<String>) {
+    fn action(&self, args: Vec<String>) -> Result<(), Box<dyn std::error::Error>> {
         match self {
             Command::Add => {
                 let a = args.get(2).unwrap().parse::<i32>().unwrap();
@@ -51,10 +57,12 @@ impl App for Command {
                 println!("{}", a / b);
             },
         } 
+
+        Ok(())
     }
 
-    fn run(&self, args: Vec<String>) {
-        self.action(args);
+    fn run(&self, args: Vec<String>) -> Result<(), Box<dyn std::error::Error>> {
+        self.action(args)
     }
 
     fn flags(&self) -> Vec<String> {

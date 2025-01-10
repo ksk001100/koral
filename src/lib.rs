@@ -1,19 +1,21 @@
 pub struct Koral {
     name: String,
     apps: Vec<Box<dyn App>>,
-    action: fn(Vec<String>),
+    action: Action,
 }
+
+pub type Action = fn(Vec<String>) -> Result<(), Box<dyn std::error::Error>>;
 
 impl Koral {
     pub fn new<T: Into<String>>(name: T) -> Self {
         Koral {
             name: name.into(),
             apps: vec![],
-            action: |_| {},
+            action: |_| Ok(()),
         }
     }
 
-    pub fn action(mut self, action: fn(Vec<String>)) -> Self {
+    pub fn action(mut self, action: Action) -> Self {
         self.action = action;
         self
     }
@@ -23,13 +25,16 @@ impl Koral {
         self
     }
 
-    pub fn run(&self, args: Vec<String>) {
+    pub fn run(&self, args: Vec<String>) -> Result<(), Box<dyn std::error::Error>> {
         match args.get(1) {
             Some(app_name) => {
                 let app = self.apps.iter().find(|app| app.name() == *app_name);
                 match app {
                     Some(app) => app.run(args),
-                    None => self.help(),
+                    None => {
+                        self.help();
+                        Ok(())
+                    },
                 }
             }
             None => (self.action)(args),
@@ -51,12 +56,12 @@ impl App for Koral {
         self.name.clone()
     }
 
-    fn action(&self, args: Vec<String>) {
-        (self.action)(args);
+    fn action(&self, args: Vec<String>) -> Result<(), Box<dyn std::error::Error>> {
+        (self.action)(args)
     }
 
-    fn run(&self, args: Vec<String>) {
-        self.action(args);
+    fn run(&self, args: Vec<String>) -> Result<(), Box<dyn std::error::Error>> {
+        self.action(args)
     }
 
     fn flags(&self) -> Vec<String> {
@@ -66,8 +71,8 @@ impl App for Koral {
 
 pub trait App {
     fn name(&self) -> String;
-    fn action(&self, args: Vec<String>);
-    fn run(&self, args: Vec<String>);
+    fn action(&self, args: Vec<String>) -> Result<(), Box<dyn std::error::Error>>;
+    fn run(&self, args: Vec<String>) -> Result<(), Box<dyn std::error::Error>>;
     fn flags(&self) -> Vec<String> {
         vec![]
     }
