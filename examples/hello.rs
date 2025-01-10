@@ -1,4 +1,4 @@
-use koral::Koral;
+use koral::*;
 
 fn main() {
     let koral = Koral::new("hello").action(|_| {

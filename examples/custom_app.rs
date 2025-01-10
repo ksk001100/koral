@@ -1,4 +1,4 @@
-use koral::{App, Koral};
+use koral::*;
 
 fn main() {
     let koral = Koral::new("calc")
