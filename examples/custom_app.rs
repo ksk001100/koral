@@ -8,7 +8,7 @@ fn main() {
         .app(Command::Div);
 
     match koral.run(std::env::args().collect()) {
-        Ok(_) => {},
+        Ok(_) => {}
         Err(e) => {
             eprintln!("{}", e);
             std::process::exit(1);
@@ -69,5 +69,3 @@ impl App for Command {
         vec![]
     }
 }
-
-

@@ -40,15 +40,10 @@ impl Koral {
                 let app = self.apps.iter().find(|app| app.name() == *app_name);
                 match app {
                     Some(app) => app.run(args[1..].to_vec()),
-                    None => {
-                        self.help();
-                        Ok(())
-                    }
+                    None => (self.action)(args)
                 }
             }
-            None => {
-                (self.action)(args)
-            },
+            None => (self.action)(args),
         }
     }
 
