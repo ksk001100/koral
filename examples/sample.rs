@@ -2,10 +2,10 @@ use koral::{App, Koral};
 
 fn main() {
     let koral = Koral::new("calc")
-        .app(Box::new(Command::Add))
-        .app(Box::new(Command::Sub))
-        .app(Box::new(Command::Mul))
-        .app(Box::new(Command::Div));
+        .app(Command::Add)
+        .app(Command::Sub)
+        .app(Command::Mul)
+        .app(Command::Div);
 
     match koral.run(std::env::args().collect()) {
         Ok(_) => {},

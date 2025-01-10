@@ -1,3 +1,12 @@
+pub trait App {
+    fn name(&self) -> String;
+    fn action(&self, args: Vec<String>) -> Result<(), Box<dyn std::error::Error>>;
+    fn run(&self, args: Vec<String>) -> Result<(), Box<dyn std::error::Error>>;
+    fn flags(&self) -> Vec<String> {
+        vec![]
+    }
+}
+
 pub struct Koral {
     name: String,
     apps: Vec<Box<dyn App>>,
@@ -20,8 +29,8 @@ impl Koral {
         self
     }
 
-    pub fn app(mut self, app: Box<dyn App>) -> Self {
-        self.apps.push(app);
+    pub fn app(mut self, app: impl App + 'static) -> Self {
+        self.apps.push(Box::new(app));
         self
     }
 
@@ -64,15 +73,6 @@ impl App for Koral {
         self.action(args)
     }
 
-    fn flags(&self) -> Vec<String> {
-        vec![]
-    }
-}
-
-pub trait App {
-    fn name(&self) -> String;
-    fn action(&self, args: Vec<String>) -> Result<(), Box<dyn std::error::Error>>;
-    fn run(&self, args: Vec<String>) -> Result<(), Box<dyn std::error::Error>>;
     fn flags(&self) -> Vec<String> {
         vec![]
     }
