@@ -37,23 +37,23 @@ impl App for Command {
     fn action(&self, args: Vec<String>) -> Result<(), Box<dyn std::error::Error>> {
         match self {
             Command::Add => {
-                let a = args.get(2).unwrap().parse::<i32>().unwrap();
-                let b = args.get(3).unwrap().parse::<i32>().unwrap();
+                let a = args.get(1).unwrap().parse::<i32>().unwrap();
+                let b = args.get(2).unwrap().parse::<i32>().unwrap();
                 println!("{}", a + b);
             }
             Command::Sub => {
-                let a = args.get(2).unwrap().parse::<i32>().unwrap();
-                let b = args.get(3).unwrap().parse::<i32>().unwrap();
+                let a = args.get(1).unwrap().parse::<i32>().unwrap();
+                let b = args.get(2).unwrap().parse::<i32>().unwrap();
                 println!("{}", a - b);
             }
             Command::Mul => {
-                let a = args.get(2).unwrap().parse::<i32>().unwrap();
-                let b = args.get(3).unwrap().parse::<i32>().unwrap();
+                let a = args.get(1).unwrap().parse::<i32>().unwrap();
+                let b = args.get(2).unwrap().parse::<i32>().unwrap();
                 println!("{}", a * b);
             }
             Command::Div => {
-                let a = args.get(2).unwrap().parse::<f32>().unwrap();
-                let b = args.get(3).unwrap().parse::<f32>().unwrap();
+                let a = args.get(1).unwrap().parse::<f32>().unwrap();
+                let b = args.get(2).unwrap().parse::<f32>().unwrap();
                 println!("{}", a / b);
             }
         }

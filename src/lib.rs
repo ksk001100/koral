@@ -34,7 +34,7 @@ impl Koral {
         self
     }
 
-    fn inner_run(&self, args: Vec<String>) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn run(&self, args: Vec<String>) -> Result<(), Box<dyn std::error::Error>> {
         match args.get(1) {
             Some(app_name) => {
                 let app = self.apps.iter().find(|app| app.name() == *app_name);
@@ -72,7 +72,7 @@ impl App for Koral {
     }
 
     fn run(&self, args: Vec<String>) -> Result<(), Box<dyn std::error::Error>> {
-        self.inner_run(args)
+        self.run(args)
     }
 
     fn flags(&self) -> Vec<String> {

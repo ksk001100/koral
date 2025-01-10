@@ -1,4 +1,4 @@
-use koral::*;
+use koral::Koral;
 
 fn main() {
     let koral = Koral::new("app")
