@@ -40,7 +40,13 @@ impl Koral {
                 let app = self.apps.iter().find(|app| app.name() == *app_name);
                 match app {
                     Some(app) => app.run(args[1..].to_vec()),
-                    None => (self.action)(args)
+                    None => {
+                        if Self::is_help(args.clone()) {
+                            self.help();
+                            return Ok(());
+                        }
+                        (self.action)(args)
+                    }
                 }
             }
             None => (self.action)(args),
@@ -50,10 +56,16 @@ impl Koral {
     pub fn help(&self) {
         println!("App Name: {}", self.name);
 
-        println!("Commands:");
-        for app in &self.apps {
-            println!("\t{}", app.name());
+        if self.apps.len() > 0 {
+            println!("Commands:");
+            for app in &self.apps {
+                println!("\t{}", app.name());
+            }
         }
+    }
+
+    fn is_help(args: Vec<String>) -> bool {
+        args.contains(&"--help".to_string()) || args.contains(&"-h".to_string())
     }
 }
 
