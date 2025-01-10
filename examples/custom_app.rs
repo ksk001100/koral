@@ -32,7 +32,7 @@ impl App for Command {
             Command::Mul => "mul".to_string(),
             Command::Div => "div".to_string(),
         }
-    } 
+    }
 
     fn action(&self, args: Vec<String>) -> Result<(), Box<dyn std::error::Error>> {
         match self {
@@ -40,23 +40,23 @@ impl App for Command {
                 let a = args.get(2).unwrap().parse::<i32>().unwrap();
                 let b = args.get(3).unwrap().parse::<i32>().unwrap();
                 println!("{}", a + b);
-            },
+            }
             Command::Sub => {
                 let a = args.get(2).unwrap().parse::<i32>().unwrap();
                 let b = args.get(3).unwrap().parse::<i32>().unwrap();
                 println!("{}", a - b);
-            },
+            }
             Command::Mul => {
                 let a = args.get(2).unwrap().parse::<i32>().unwrap();
                 let b = args.get(3).unwrap().parse::<i32>().unwrap();
                 println!("{}", a * b);
-            },
+            }
             Command::Div => {
                 let a = args.get(2).unwrap().parse::<f32>().unwrap();
                 let b = args.get(3).unwrap().parse::<f32>().unwrap();
                 println!("{}", a / b);
-            },
-        } 
+            }
+        }
 
         Ok(())
     }
@@ -68,6 +68,6 @@ impl App for Command {
     fn flags(&self) -> Vec<String> {
         vec![]
     }
-
-
 }
+
+
