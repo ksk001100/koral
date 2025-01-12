@@ -1,4 +1,4 @@
-use koral::*;
+use koral::{Flag, FlagKind, Koral};
 
 fn main() {
     let koral = Koral::new("hello")
