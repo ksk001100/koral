@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 pub trait App {
     fn name(&self) -> String;
-    fn action(&self, context: Context) -> Result<(), Box<dyn std::error::Error>>;
+    fn action(&self, ctx: Context) -> Result<(), Box<dyn std::error::Error>>;
     fn run(&self, args: Vec<String>) -> Result<(), Box<dyn std::error::Error>>;
     fn flags(&self) -> Vec<Flag> {
         vec![]
@@ -143,14 +143,14 @@ impl Koral {
                             self.help();
                             return Ok(());
                         }
-                        let context = Context::new(self, args);
-                        (self.action)(context)
+                        let ctx = Context::new(self, args);
+                        (self.action)(ctx)
                     }
                 }
             }
             None => {
-                let context = Context::new(self, args);
-                (self.action)(context)
+                let ctx = Context::new(self, args);
+                (self.action)(ctx)
             }
         }
     }
@@ -176,8 +176,8 @@ impl App for Koral {
         self.name.clone()
     }
 
-    fn action(&self, context: Context) -> Result<(), Box<dyn std::error::Error>> {
-        (self.action)(context)
+    fn action(&self, ctx: Context) -> Result<(), Box<dyn std::error::Error>> {
+        (self.action)(ctx)
     }
 
     fn run(&self, args: Vec<String>) -> Result<(), Box<dyn std::error::Error>> {

@@ -34,26 +34,26 @@ impl App for Command {
         }
     }
 
-    fn action(&self, context: Context) -> Result<(), Box<dyn std::error::Error>> {
+    fn action(&self, ctx: Context) -> Result<(), Box<dyn std::error::Error>> {
         match self {
             Command::Add => {
-                let a = context.args.get(1).unwrap().parse::<i32>()?;
-                let b = context.args.get(2).unwrap().parse::<i32>()?;
+                let a = ctx.args.get(1).unwrap().parse::<i32>()?;
+                let b = ctx.args.get(2).unwrap().parse::<i32>()?;
                 println!("{}", a + b);
             }
             Command::Sub => {
-                let a = context.args.get(1).unwrap().parse::<i32>()?;
-                let b = context.args.get(2).unwrap().parse::<i32>()?;
+                let a = ctx.args.get(1).unwrap().parse::<i32>()?;
+                let b = ctx.args.get(2).unwrap().parse::<i32>()?;
                 println!("{}", a - b);
             }
             Command::Mul => {
-                let a = context.args.get(1).unwrap().parse::<i32>()?;
-                let b = context.args.get(2).unwrap().parse::<i32>()?;
+                let a = ctx.args.get(1).unwrap().parse::<i32>()?;
+                let b = ctx.args.get(2).unwrap().parse::<i32>()?;
                 println!("{}", a * b);
             }
             Command::Div => {
-                let a = context.args.get(1).unwrap().parse::<f32>()?;
-                let b = context.args.get(2).unwrap().parse::<f32>()?;
+                let a = ctx.args.get(1).unwrap().parse::<f32>()?;
+                let b = ctx.args.get(2).unwrap().parse::<f32>()?;
                 println!("{}", a / b);
             }
         }
@@ -62,7 +62,7 @@ impl App for Command {
     }
 
     fn run(&self, args: Vec<String>) -> Result<(), Box<dyn std::error::Error>> {
-        let context = Context::new(self, args);
-        self.action(context)
+        let ctx = Context::new(self, args);
+        self.action(ctx)
     }
 }

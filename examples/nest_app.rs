@@ -2,21 +2,21 @@ use koral::Koral;
 
 fn main() {
     let koral = Koral::new("app")
-        .action(|args| {
+        .action(|ctx| {
             println!("app");
-            println!("args: {:?}", args);
+            println!("args: {:?}", ctx);
             Ok(())
         })
         .app(
             Koral::new("nest_app1")
-                .action(|args| {
+                .action(|ctx| {
                     println!("nest_app1");
-                    println!("args: {:?}", args);
+                    println!("args: {:?}", ctx);
                     Ok(())
                 })
-                .app(Koral::new("nest_app2").action(|args| {
+                .app(Koral::new("nest_app2").action(|ctx| {
                     println!("nest_app2");
-                    println!("args: {:?}", args);
+                    println!("args: {:?}", ctx);
                     Ok(())
                 })),
         );
