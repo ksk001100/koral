@@ -1,8 +1,10 @@
+use std::collections::HashMap;
+
 pub trait App {
     fn name(&self) -> String;
-    fn action(&self, args: Vec<String>) -> Result<(), Box<dyn std::error::Error>>;
+    fn action(&self, context: Context) -> Result<(), Box<dyn std::error::Error>>;
     fn run(&self, args: Vec<String>) -> Result<(), Box<dyn std::error::Error>>;
-    fn flags(&self) -> Vec<String> {
+    fn flags(&self) -> Vec<Flag> {
         vec![]
     }
 }
@@ -11,15 +13,106 @@ pub struct Koral {
     name: String,
     apps: Vec<Box<dyn App>>,
     action: Action,
+    flags: Vec<Flag>,
 }
 
-pub type Action = fn(Vec<String>) -> Result<(), Box<dyn std::error::Error>>;
+#[derive(Clone)]
+pub struct Flag {
+    name: String,
+    alias: Vec<String>,
+    kind: FlagKind,
+}
+
+#[derive(Debug, Clone)]
+pub enum FlagKind {
+    Boolean,
+    Value,
+}
+
+#[derive(Debug, Clone)]
+pub enum FlagValue {
+    Boolean(bool),
+    Value(String),
+}
+
+#[derive(Debug, Clone)]
+pub struct Context {
+    pub args: Vec<String>,
+    pub flags: HashMap<String, Option<FlagValue>>,
+}
+
+impl Context {
+    pub fn new(app: &dyn App, args: Vec<String>) -> Self {
+        let mut flags = HashMap::new();
+        for flag in app.flags() {
+            flags.insert(flag.name.clone(), flag.value(&args));
+        }
+        Context { args, flags }
+    }
+
+    pub fn bool_flag<T: Into<String>>(&self, name: T) -> bool {
+        match self.flags.get(&name.into()).unwrap() {
+            Some(FlagValue::Boolean(b)) => *b,
+            _ => false,
+        }
+    }
+
+    pub fn value_flag<T: Into<String>>(&self, name: T) -> Option<String> {
+        match self.flags.get(&name.into()).unwrap() {
+            Some(FlagValue::Value(s)) => Some(s.to_string()),
+            _ => None,
+        }
+    }
+}
+
+impl Flag {
+    pub fn new<T: Into<String>>(name: T, kind: FlagKind) -> Self {
+        Flag {
+            name: name.into(),
+            alias: vec![],
+            kind,
+        }
+    }
+
+    pub fn alias(mut self, alias: impl Into<String>) -> Self {
+        self.alias.push(alias.into());
+        self
+    }
+
+    pub fn option_index(&self, v: &[String]) -> Option<usize> {
+        v.iter().position(|r| {
+            r == &format!("--{}", &self.name) || self.alias.iter().any(|a| r == &format!("-{}", a))
+        })
+    }
+
+    pub fn value(&self, args: &[String]) -> Option<FlagValue> {
+        match self.kind {
+            FlagKind::Boolean => {
+                if let Some(_) = self.option_index(args) {
+                    return Some(FlagValue::Boolean(true));
+                }
+                None
+            }
+            FlagKind::Value => {
+                if let Some(index) = self.option_index(args) {
+                    if index + 1 < args.len() && !args[index + 1].starts_with('-') {
+                        return Some(FlagValue::Value(args[index + 1].clone()));
+                    }
+                }
+                None
+            }
+        }
+    }
+}
+
+pub type Action = fn(Context) -> Result<(), Box<dyn std::error::Error>>;
 
 impl Koral {
     pub fn new<T: Into<String>>(name: T) -> Self {
         Koral {
             name: name.into(),
             apps: vec![],
+            flags: vec![],
             action: |_| Ok(()),
         }
     }
@@ -34,6 +127,11 @@ impl Koral {
         self
     }
 
+    pub fn flag(mut self, flag: Flag) -> Self {
+        self.flags.push(flag);
+        self
+    }
+
     pub fn run(&self, args: Vec<String>) -> Result<(), Box<dyn std::error::Error>> {
         match args.get(1) {
             Some(app_name) => {
@@ -45,11 +143,15 @@ impl Koral {
                             self.help();
                             return Ok(());
                         }
-                        (self.action)(args)
+                        let context = Context::new(self, args);
+                        (self.action)(context)
                     }
                 }
             }
-            None => (self.action)(args),
+            None => {
+                let context = Context::new(self, args);
+                (self.action)(context)
+            }
         }
     }
 
@@ -74,16 +176,16 @@ impl App for Koral {
         self.name.clone()
     }
 
-    fn action(&self, args: Vec<String>) -> Result<(), Box<dyn std::error::Error>> {
-        (self.action)(args)
+    fn action(&self, context: Context) -> Result<(), Box<dyn std::error::Error>> {
+        (self.action)(context)
     }
 
     fn run(&self, args: Vec<String>) -> Result<(), Box<dyn std::error::Error>> {
         self.run(args)
     }
 
-    fn flags(&self) -> Vec<String> {
-        vec![]
+    fn flags(&self) -> Vec<Flag> {
+        self.flags.clone()
     }
 }
 

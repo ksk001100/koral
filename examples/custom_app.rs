@@ -34,26 +34,26 @@ impl App for Command {
         }
     }
 
-    fn action(&self, args: Vec<String>) -> Result<(), Box<dyn std::error::Error>> {
+    fn action(&self, context: Context) -> Result<(), Box<dyn std::error::Error>> {
         match self {
             Command::Add => {
-                let a = args.get(1).unwrap().parse::<i32>().unwrap();
-                let b = args.get(2).unwrap().parse::<i32>().unwrap();
+                let a = context.args.get(1).unwrap().parse::<i32>().unwrap();
+                let b = context.args.get(2).unwrap().parse::<i32>().unwrap();
                 println!("{}", a + b);
             }
             Command::Sub => {
-                let a = args.get(1).unwrap().parse::<i32>().unwrap();
-                let b = args.get(2).unwrap().parse::<i32>().unwrap();
+                let a = context.args.get(1).unwrap().parse::<i32>().unwrap();
+                let b = context.args.get(2).unwrap().parse::<i32>().unwrap();
                 println!("{}", a - b);
             }
             Command::Mul => {
-                let a = args.get(1).unwrap().parse::<i32>().unwrap();
-                let b = args.get(2).unwrap().parse::<i32>().unwrap();
+                let a = context.args.get(1).unwrap().parse::<i32>().unwrap();
+                let b = context.args.get(2).unwrap().parse::<i32>().unwrap();
                 println!("{}", a * b);
             }
             Command::Div => {
-                let a = args.get(1).unwrap().parse::<f32>().unwrap();
-                let b = args.get(2).unwrap().parse::<f32>().unwrap();
+                let a = context.args.get(1).unwrap().parse::<f32>().unwrap();
+                let b = context.args.get(2).unwrap().parse::<f32>().unwrap();
                 println!("{}", a / b);
             }
         }
@@ -62,10 +62,7 @@ impl App for Command {
     }
 
     fn run(&self, args: Vec<String>) -> Result<(), Box<dyn std::error::Error>> {
-        self.action(args)
-    }
-
-    fn flags(&self) -> Vec<String> {
-        vec![]
+        let context = Context::new(self, args);
+        self.action(context)
     }
 }
