@@ -157,11 +157,20 @@ impl Koral {
 
     pub fn help(&self) {
         println!("App Name: {}", self.name);
+        if self.flags.len() > 0 {
+            println!("Flags:");
+            for flag in &self.flags {
+                println!("\t--{} {:?}", flag.name, flag.kind);
+            }
+        }
 
         if self.apps.len() > 0 {
             println!("Commands:");
             for app in &self.apps {
                 println!("\t{}", app.name());
+                for flag in app.flags() {
+                    println!("\t\t--{} {:?}", flag.name, flag.kind);
+                }
             }
         }
     }
