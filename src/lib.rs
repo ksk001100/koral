@@ -194,8 +194,121 @@ mod tests {
     use super::*;
 
     #[test]
-    fn it_works() {
+    fn test_new_koral() {
         let app = Koral::new("cli");
         assert_eq!(app.name, "cli".to_string());
+        assert_eq!(app.apps.len(), 0);
+        assert_eq!(app.flags.len(), 0);
+        assert!(matches!(app.run(vec![]), Ok(())));
+    }
+
+    #[test]
+    fn test_action() {
+        let app = Koral::new("cli").action(|_| Err(Box::from("Action Error".to_string())));
+        assert!(matches!(app.run(vec![]), Err(_)));
+    }
+
+    #[test]
+    fn test_app() {
+        struct TestApp;
+
+        impl App for TestApp {
+            fn name(&self) -> String {
+                "test".to_string()
+            }
+            fn action(&self, _ctx: Context) -> Result<(), Box<dyn std::error::Error>> {
+                Ok(())
+            }
+            fn run(&self, _args: Vec<String>) -> Result<(), Box<dyn std::error::Error>> {
+                Ok(())
+            }
+        }
+
+        let app = Koral::new("cli").app(TestApp);
+        assert_eq!(app.apps.len(), 1);
+    }
+
+    #[test]
+    fn test_flag() {
+        let flag = Flag::new("flag", FlagKind::Boolean).alias("f");
+        assert_eq!(flag.name, "flag".to_string());
+        assert_eq!(flag.alias[0], "f".to_string());
+        assert!(matches!(flag.kind, FlagKind::Boolean));
+    }
+
+    #[test]
+    fn test_context_new() {
+        struct TestApp;
+        impl App for TestApp {
+            fn name(&self) -> String {
+                "test".to_string()
+            }
+            fn action(&self, _ctx: Context) -> Result<(), Box<dyn std::error::Error>> {
+                Ok(())
+            }
+            fn run(&self, _args: Vec<String>) -> Result<(), Box<dyn std::error::Error>> {
+                Ok(())
+            }
+            fn flags(&self) -> Vec<Flag> {
+                vec![Flag::new("flag", FlagKind::Boolean)]
+            }
+        }
+
+        let app = TestApp;
+        let ctx = Context::new(&app, vec!["--flag".to_string()]);
+        assert_eq!(ctx.flags.len(), 1);
+    }
+
+    #[test]
+    fn test_context_bool_flag() {
+        struct TestApp;
+        impl App for TestApp {
+            fn name(&self) -> String {
+                "test".to_string()
+            }
+            fn action(&self, _ctx: Context) -> Result<(), Box<dyn std::error::Error>> {
+                Ok(())
+            }
+            fn run(&self, _args: Vec<String>) -> Result<(), Box<dyn std::error::Error>> {
+                Ok(())
+            }
+            fn flags(&self) -> Vec<Flag> {
+                vec![Flag::new("flag", FlagKind::Boolean)]
+            }
+        }
+
+        let app = TestApp;
+        let ctx = Context::new(&app, vec!["--flag".to_string()]);
+        assert!(ctx.bool_flag("flag"));
+    }
+
+    #[test]
+    fn test_context_value_flag() {
+        struct TestApp;
+        impl App for TestApp {
+            fn name(&self) -> String {
+                "test".to_string()
+            }
+            fn action(&self, _ctx: Context) -> Result<(), Box<dyn std::error::Error>> {
+                Ok(())
+            }
+            fn run(&self, _args: Vec<String>) -> Result<(), Box<dyn std::error::Error>> {
+                Ok(())
+            }
+            fn flags(&self) -> Vec<Flag> {
+                vec![Flag::new("flag", FlagKind::Value)]
+            }
+        }
+
+        let app = TestApp;
+        let ctx = Context::new(&app, vec!["--flag".to_string(), "value".to_string()]);
+        assert_eq!(ctx.value_flag("flag"), Some("value".to_string()));
+    }
+
+    #[test]
+    fn test_is_help() {
+        assert!(Koral::is_help(vec!["--help".to_string()]));
+        assert!(Koral::is_help(vec!["-h".to_string()]));
+        assert!(!Koral::is_help(vec![]));
     }
 }
