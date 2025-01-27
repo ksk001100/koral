@@ -9,6 +9,16 @@ pub trait App {
     }
 }
 
+pub trait FlagTrait {
+    type Kind;
+    type Value;
+
+    fn new<T: Into<String>>(name: T, kind: Self::Kind) -> Self;
+    fn alias(self, alias: impl Into<String>) -> Self;
+    fn option_index(&self, v: &[String]) -> Option<usize>;
+    fn value(&self, args: &[String]) -> Option<Self::Value>;
+}
+
 pub struct Koral {
     name: String,
     apps: Vec<Box<dyn App>>,
@@ -65,8 +75,11 @@ impl Context {
     }
 }
 
-impl Flag {
-    pub fn new<T: Into<String>>(name: T, kind: FlagKind) -> Self {
+impl FlagTrait for Flag {
+    type Kind = FlagKind;
+    type Value = FlagValue;
+
+    fn new<T: Into<String>>(name: T, kind: Self::Kind) -> Self {
         Flag {
             name: name.into(),
             alias: vec![],
@@ -74,18 +87,18 @@ impl Flag {
         }
     }
 
-    pub fn alias(mut self, alias: impl Into<String>) -> Self {
+    fn alias(mut self, alias: impl Into<String>) -> Self {
         self.alias.push(alias.into());
         self
     }
 
-    pub fn option_index(&self, v: &[String]) -> Option<usize> {
+    fn option_index(&self, v: &[String]) -> Option<usize> {
         v.iter().position(|r| {
             r == &format!("--{}", &self.name) || self.alias.iter().any(|a| r == &format!("-{}", a))
         })
     }
 
-    pub fn value(&self, args: &[String]) -> Option<FlagValue> {
+    fn value(&self, args: &[String]) -> Option<Self::Value> {
         match self.kind {
             FlagKind::Boolean => {
                 if let Some(_) = self.option_index(args) {
