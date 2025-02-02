@@ -1,7 +1,10 @@
-use koral::{Flag, FlagKind, FlagTrait, Koral};
+use koral::{
+    app::App,
+    flag::{Flag, FlagKind},
+};
 
 fn main() {
-    let koral = Koral::new("hello")
+    let koral = App::new("hello")
         .flag(Flag::new("test", FlagKind::Boolean))
         .flag(Flag::new("name", FlagKind::Value))
         .flag(Flag::new("error", FlagKind::Boolean))

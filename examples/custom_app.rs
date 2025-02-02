@@ -1,7 +1,7 @@
-use koral::{App, Context, Koral};
+use koral::{traits, App, Context};
 
 fn main() {
-    let koral = Koral::new("calc")
+    let koral = App::new("calc")
         .app(Command::Add)
         .app(Command::Sub)
         .app(Command::Mul)
@@ -24,7 +24,7 @@ enum Command {
     Div,
 }
 
-impl App for Command {
+impl traits::App for Command {
     fn name(&self) -> String {
         match self {
             Command::Add => "add".to_string(),
