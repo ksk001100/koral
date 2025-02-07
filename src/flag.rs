@@ -92,8 +92,8 @@ mod tests {
             "value".to_string(),
         ];
         assert_eq!(
-            flag.value(&args).unwrap(),
-            FlagValue::Value("value".to_string())
+            flag.value(&args),
+            Some(FlagValue::Value("value".to_string()))
         );
     }
 
