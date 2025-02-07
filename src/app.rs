@@ -99,3 +99,47 @@ impl traits::App for App {
         self.flags.clone()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::flag::FlagKind;
+
+    #[test]
+    fn test_app() {
+        let app = App::new("test")
+            .flag(Flag::new("flag", FlagKind::Value))
+            .action(|ctx| {
+                let flag = ctx.value_flag("flag").unwrap();
+                assert_eq!(flag, "value");
+                Ok(())
+            });
+
+        let args = vec![
+            "test".to_string(),
+            "--flag".to_string(),
+            "value".to_string(),
+        ];
+        app.run(args).unwrap();
+    }
+
+    #[test]
+    fn test_app_help() {
+        let app = App::new("test")
+            .flag(Flag::new("flag", FlagKind::Value))
+            .action(|_| Ok(()));
+
+        let args = vec!["test".to_string(), "--help".to_string()];
+        app.run(args).unwrap();
+    }
+
+    #[test]
+    fn test_app_app() {
+        let app = App::new("test")
+            .app(App::new("sub").action(|_| Ok(())))
+            .action(|_| Ok(()));
+
+        let args = vec!["test".to_string(), "sub".to_string()];
+        app.run(args).unwrap();
+    }
+}

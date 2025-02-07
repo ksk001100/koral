@@ -33,3 +33,28 @@ impl Context {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::app::App;
+    use crate::flag::{Flag, FlagKind};
+
+    #[test]
+    fn test_context() {
+        let app = App::new("test")
+            .flag(Flag::new("flag", FlagKind::Value))
+            .flag(Flag::new("bool", FlagKind::Boolean));
+        let ctx = Context::new(
+            &app,
+            vec![
+                "test".to_string(),
+                "--flag".to_string(),
+                "value".to_string(),
+                "--bool".to_string(),
+            ],
+        );
+        assert_eq!(ctx.value_flag("flag"), Some("value".to_string()));
+        assert_eq!(ctx.bool_flag("bool"), true);
+    }
+}

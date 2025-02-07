@@ -1,19 +1,19 @@
 use crate::traits::Flag as FlagTrait;
 
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Flag {
     name: String,
     alias: Vec<String>,
     kind: FlagKind,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum FlagKind {
     Boolean,
     Value,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum FlagValue {
     Boolean(bool),
     Value(String),
@@ -69,5 +69,38 @@ impl FlagTrait for Flag {
                 None
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_flag() {
+        let flag = Flag::new("flag", FlagKind::Value);
+        assert_eq!(flag.clone().name(), "flag");
+        assert_eq!(flag.clone().kind(), FlagKind::Value);
+    }
+
+    #[test]
+    fn test_flag_value() {
+        let flag = Flag::new("flag", FlagKind::Value);
+        let args = vec![
+            "test".to_string(),
+            "--flag".to_string(),
+            "value".to_string(),
+        ];
+        assert_eq!(
+            flag.value(&args).unwrap(),
+            FlagValue::Value("value".to_string())
+        );
+    }
+
+    #[test]
+    fn test_flag_boolean() {
+        let flag = Flag::new("flag", FlagKind::Boolean);
+        let args = vec!["test".to_string(), "--flag".to_string()];
+        assert_eq!(flag.value(&args), Some(FlagValue::Boolean(true)));
     }
 }
