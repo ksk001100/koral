@@ -2,6 +2,11 @@
 
 > CLI framework providing simplicity and extensibility
 
+## Install
+```bash
+cargo add --git https://github.com/ksk001100/koral
+```
+
 ## Run example
 ### Hello world
 ```bash
