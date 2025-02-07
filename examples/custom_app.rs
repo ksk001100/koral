@@ -1,4 +1,4 @@
-use koral::{traits, App, Context};
+use koral::{traits, Context};
 
 fn main() {
     let koral = App::new("calc")
@@ -13,6 +13,76 @@ fn main() {
             eprintln!("{}", e);
             std::process::exit(1);
         }
+    }
+}
+
+struct App {
+    name: String,
+    apps: Vec<Box<dyn traits::App>>,
+}
+
+impl App {
+    fn new<T: Into<String>>(name: T) -> Self {
+        App {
+            name: name.into(),
+            apps: vec![],
+        }
+    }
+
+    fn app(mut self, app: impl traits::App + 'static) -> Self {
+        self.apps.push(Box::new(app));
+        self
+    }
+
+    fn run(&self, args: Vec<String>) -> Result<(), Box<dyn std::error::Error>> {
+        match args.get(1) {
+            Some(app_name) => {
+                let app = self.apps.iter().find(|app| app.name() == *app_name);
+                match app {
+                    Some(app) => app.run(args[1..].to_vec()),
+                    None => {
+                        if Self::is_help(args.clone()) {
+                            self.help();
+                            return Ok(());
+                        }
+                        Err("unknown command".into())
+                    }
+                }
+            }
+            None => {
+                self.help();
+                Ok(())
+            }
+        }
+    }
+
+    fn help(&self) {
+        println!("Usage: {} <command> [args]", self.name);
+        println!();
+        println!("Commands:");
+        for app in &self.apps {
+            println!("  {}", app.name());
+        }
+    }
+
+    fn is_help(args: Vec<String>) -> bool {
+        args.iter().any(|arg| arg == "--help" || arg == "-h")
+    }
+}
+
+impl traits::App for App {
+    fn name(&self) -> String {
+        self.name.clone()
+    }
+
+    fn action(&self, _ctx: Context) -> Result<(), Box<dyn std::error::Error>> {
+        self.help();
+        Ok(())
+    }
+
+    fn run(&self, args: Vec<String>) -> Result<(), Box<dyn std::error::Error>> {
+        let ctx = Context::new(self, args);
+        self.action(ctx)
     }
 }
 
