@@ -2,6 +2,9 @@
 
 > CLI framework providing simplicity and extensibility
 
+## Warning
+Still in the planning stage.
+
 ## Install
 ```bash
 cargo add --git https://github.com/ksk001100/koral
@@ -28,4 +31,3 @@ cargo run --example custom_app sub 8 4
 cargo run --example custom_app mul 8 4
 cargo run --example custom_app div 8 4
 ```
-
