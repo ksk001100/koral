@@ -4,7 +4,7 @@ use koral::{
 };
 
 fn main() {
-    let koral = App::new("hello")
+    let app = App::new("hello")
         .flag(Flag::new("test", FlagKind::Boolean))
         .flag(Flag::new("name", FlagKind::Value))
         .flag(Flag::new("error", FlagKind::Boolean))
@@ -21,7 +21,7 @@ fn main() {
             }
         });
 
-    match koral.run(std::env::args().collect()) {
+    match app.run(std::env::args().collect()) {
         Ok(_) => {}
         Err(e) => {
             eprintln!("{}", e);

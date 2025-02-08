@@ -1,7 +1,7 @@
 use koral::App;
 
 fn main() {
-    let koral = App::new("app")
+    let app = App::new("app")
         .action(|ctx| {
             println!("app");
             println!("args: {:?}", ctx);
@@ -21,7 +21,7 @@ fn main() {
                 })),
         );
 
-    match koral.run(std::env::args().collect()) {
+    match app.run(std::env::args().collect()) {
         Ok(_) => {}
         Err(e) => {
             eprintln!("{}", e);

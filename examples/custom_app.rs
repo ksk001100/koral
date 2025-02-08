@@ -1,13 +1,13 @@
 use koral::{traits, Context};
 
 fn main() {
-    let koral = App::new("calc")
+    let app = App::new("calc")
         .app(Command::Add)
         .app(Command::Sub)
         .app(Command::Mul)
         .app(Command::Div);
 
-    match koral.run(std::env::args().collect()) {
+    match app.run(std::env::args().collect()) {
         Ok(_) => {}
         Err(e) => {
             eprintln!("{}", e);
