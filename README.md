@@ -2,8 +2,8 @@
 
 > CLI framework providing simplicity and extensibility
 
-## Warning
-Still in the planning stage.
+## <span style="color: red; font-weight: bold;">Warning</span>
+<span style="color: red; font-weight: bold;">Still in the planning stage.</span>
 
 ## Install
 ```bash
