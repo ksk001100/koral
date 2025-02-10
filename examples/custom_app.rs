@@ -81,7 +81,7 @@ impl traits::App for App {
     }
 
     fn run(&self, args: Vec<String>) -> Result<(), Box<dyn std::error::Error>> {
-        let ctx = Context::new(self, args);
+        let ctx = Context::new(args, self.flags().clone());
         self.action(ctx)
     }
 }
@@ -132,7 +132,7 @@ impl traits::App for Command {
     }
 
     fn run(&self, args: Vec<String>) -> Result<(), Box<dyn std::error::Error>> {
-        let ctx = Context::new(self, args);
+        let ctx = Context::new(args, self.flags().clone());
         self.action(ctx)
     }
 }

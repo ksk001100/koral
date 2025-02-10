@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::flag::FlagValue;
+use crate::{flag, traits::Flag};
 
 #[derive(Debug, Clone)]
 pub struct Context {
@@ -9,26 +9,27 @@ pub struct Context {
 }
 
 impl Context {
-    pub fn new(app: &dyn crate::traits::App, args: Vec<String>) -> Self {
-        use crate::traits::Flag;
-
-        let mut flags = HashMap::new();
-        for flag in app.flags() {
-            flags.insert(flag.clone().name(), flag.clone().value(&args));
+    pub fn new<F: Flag<Kind = flag::FlagKind, Value = flag::FlagValue>>(
+        args: Vec<String>,
+        flags: Vec<F>,
+    ) -> Self {
+        let mut hash = HashMap::new();
+        for flag in flags {
+            hash.insert(flag.clone().name(), flag.clone().value(&args));
         }
-        Context { args, flags }
+        Context { args, flags: hash }
     }
 
     pub fn bool_flag<T: Into<String>>(&self, name: T) -> bool {
         match self.flags.get(&name.into()).unwrap() {
-            Some(FlagValue::Boolean(b)) => *b,
+            Some(flag::FlagValue::Boolean(b)) => *b,
             _ => false,
         }
     }
 
     pub fn value_flag<T: Into<String>>(&self, name: T) -> Option<String> {
         match self.flags.get(&name.into()).unwrap() {
-            Some(FlagValue::Value(s)) => Some(s.to_string()),
+            Some(flag::FlagValue::Value(s)) => Some(s.to_string()),
             _ => None,
         }
     }
@@ -37,21 +38,21 @@ impl Context {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::app::App;
     use crate::flag::{Flag, FlagKind};
 
     #[test]
     fn test_context() {
-        let app = App::new("test")
-            .flag(Flag::new("flag", FlagKind::Value))
-            .flag(Flag::new("bool", FlagKind::Boolean));
+        let args = vec![
+            "test".to_string(),
+            "--flag".to_string(),
+            "value".to_string(),
+            "--bool".to_string(),
+        ];
         let ctx = Context::new(
-            &app,
+            args.clone(),
             vec![
-                "test".to_string(),
-                "--flag".to_string(),
-                "value".to_string(),
-                "--bool".to_string(),
+                Flag::new("flag", FlagKind::Value),
+                Flag::new("bool", FlagKind::Boolean),
             ],
         );
         assert_eq!(ctx.value_flag("flag"), Some("value".to_string()));

@@ -43,13 +43,13 @@ impl App {
                             self.help();
                             return Ok(());
                         }
-                        let ctx = Context::new(self, args);
+                        let ctx = Context::new(args, self.flags.clone());
                         (self.action)(ctx)
                     }
                 }
             }
             None => {
-                let ctx = Context::new(self, args);
+                let ctx = Context::new(args, self.flags.clone());
                 (self.action)(ctx)
             }
         }
