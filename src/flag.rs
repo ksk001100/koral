@@ -27,6 +27,11 @@ impl Flag {
             kind,
         }
     }
+
+    pub fn alias(mut self, alias: impl Into<String>) -> Self {
+        self.alias.push(alias.into());
+        self
+    }
 }
 
 impl FlagTrait for Flag {
@@ -41,9 +46,8 @@ impl FlagTrait for Flag {
         self.kind.clone()
     }
 
-    fn alias(mut self, alias: impl Into<String>) -> Self {
-        self.alias.push(alias.into());
-        self
+    fn alias(self) -> Vec<String> {
+        self.alias.clone()
     }
 
     fn option_index(&self, v: &[String]) -> Option<usize> {

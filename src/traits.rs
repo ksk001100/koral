@@ -16,8 +16,13 @@ pub trait Flag: Clone {
 
     fn kind(self) -> Self::Kind;
     fn name(self) -> String;
-    fn alias(self, alias: impl Into<String>) -> Self;
-    fn option_index(&self, v: &[String]) -> Option<usize>;
+    fn alias(self) -> Vec<String>;
+    fn option_index(&self, v: &[String]) -> Option<usize> {
+        v.iter().position(|r| {
+            r == &format!("--{}", &self.clone().name())
+                || self.clone().alias().iter().any(|a| r == &format!("-{}", a))
+        })
+    }
     fn value(&self, args: &[String]) -> Option<Self::Value>;
 }
 
