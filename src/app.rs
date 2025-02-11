@@ -59,14 +59,14 @@ impl App {
         use crate::traits::Flag;
 
         println!("App Name: {}", self.name);
-        if self.flags.len() > 0 {
+        if self.flags.is_empty() {
             println!("Flags:");
             for flag in &self.flags {
                 println!("\t--{} {:?}", flag.clone().name(), flag.clone().kind());
             }
         }
 
-        if self.apps.len() > 0 {
+        if self.apps.is_empty() {
             println!("Commands:");
             for app in &self.apps {
                 println!("\t{}", app.name());

@@ -59,7 +59,7 @@ impl FlagTrait for Flag {
     fn value(&self, args: &[String]) -> Option<Self::Value> {
         match self.kind {
             FlagKind::Boolean => {
-                if let Some(_) = self.option_index(args) {
+                if self.option_index(args).is_some() {
                     return Some(FlagValue::Boolean(true));
                 }
                 None
