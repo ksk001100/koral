@@ -58,7 +58,7 @@ impl App {
     pub fn help(&self) {
         use crate::traits::Flag;
 
-        println!("traits::App Name: {}", self.name);
+        println!("App Name: {}", self.name);
         if self.flags.len() > 0 {
             println!("Flags:");
             for flag in &self.flags {
