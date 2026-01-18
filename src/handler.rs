@@ -1,13 +1,19 @@
 use crate::{Context, KoralResult};
 use std::any::Any;
 
+/// Marker for handlers that expect (App, Context)
 pub struct WithApp;
-pub struct WithoutApp;
+/// Marker for handlers that expect (Context) but have access to App via context
+pub struct WithoutApp; // Historically named
+/// Marker for handlers that ignore arguments
 pub struct IgnoreApp;
 
+/// Marker for typed handlers (Context<A>)
 pub struct TypedApp;
 
+/// Trait representing an action handler
 pub trait Handler<A: ?Sized, Marker> {
+    /// Execute the handler
     fn call(&self, app: &mut A, ctx: Context) -> KoralResult<()>;
 }
 
@@ -65,6 +71,7 @@ where
     }
 }
 
+/// Helper to invoke a handler with the correct marker type
 pub fn call_handler<A: Any, M, H>(handler: H, app: &mut A, ctx: Context) -> KoralResult<()>
 where
     H: Handler<A, M>,

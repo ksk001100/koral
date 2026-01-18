@@ -1,3 +1,39 @@
+#![warn(missing_docs)]
+#![doc(html_logo_url = "https://github.com/ksk001100/koral/raw/main/assets/logo.png")]
+
+//! # Koral
+//!
+//! `koral` is a macro-centric command-line argument parser for Rust.
+//! It emphasizes a clear separation between **Definition** (what your CLI looks like) and **State** (what your application data is).
+//!
+//! ## Key Features
+//!
+//! - **Declarative**: Define flags and subcommands using `#[derive(App)]`, `#[derive(Flag)]`.
+//! - **Type-Safe**: Flags are strongly typed.
+//! - **Extensible**: Easily share state across subcommands.
+//!
+//! ## Quick Start
+//!
+//! ```rust
+//! use koral::prelude::*;
+//!
+//! #[derive(Flag, Debug)]
+//! #[flag(name = "verbose", short = 'v')]
+//! struct VerboseFlag;
+//!
+//! #[derive(App)]
+//! #[app(name = "myapp", action = run)]
+//! #[app(flags(VerboseFlag))]
+//! struct MyApp;
+//!
+//! fn run(ctx: Context) -> KoralResult<()> {
+//!     if ctx.get::<VerboseFlag>().unwrap_or(false) {
+//!         println!("Verbose mode on");
+//!     }
+//!     Ok(())
+//! }
+//! ```
+
 pub(crate) mod app;
 pub(crate) mod command;
 pub(crate) mod context;
@@ -5,6 +41,7 @@ pub(crate) mod error;
 pub(crate) mod flag;
 pub(crate) mod handler;
 pub(crate) mod parser;
+/// Core traits for the Koral framework.
 pub mod traits;
 
 #[doc(hidden)]

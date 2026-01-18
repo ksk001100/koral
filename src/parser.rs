@@ -2,15 +2,18 @@ use crate::context::Context;
 use crate::error::{KoralError, KoralResult};
 use std::collections::HashMap;
 
+/// Command line argument parser
 pub struct Parser {
     known_flags: Vec<crate::flag::FlagDef>,
 }
 
 impl Parser {
+    /// Create a new Parser with definitions of known flags.
     pub fn new(flags: Vec<crate::flag::FlagDef>) -> Self {
         Self { known_flags: flags }
     }
 
+    /// Parse the provided arguments into a Context.
     pub fn parse<'a>(&self, args: &[String]) -> KoralResult<Context<'a>> {
         let mut flags_map: HashMap<String, Option<String>> = HashMap::new();
         let mut positionals: Vec<String> = Vec::new();

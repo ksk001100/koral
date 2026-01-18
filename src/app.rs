@@ -3,6 +3,7 @@ use crate::error::KoralResult;
 use crate::flag::{Flag, FlagDef};
 use crate::traits::App as AppTrait;
 
+/// The builder struct for defining an application.
 pub struct App {
     name: String,
     version: String,

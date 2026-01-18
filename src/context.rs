@@ -23,6 +23,7 @@ pub struct Context<'a, A: ?Sized = dyn Any> {
 use crate::flag::Flag;
 
 impl<'a, A: ?Sized> Context<'a, A> {
+    /// Create a new Context.
     pub fn new(flags: HashMap<String, Option<String>>, args: Vec<String>) -> Self {
         Self {
             flags,
@@ -32,11 +33,13 @@ impl<'a, A: ?Sized> Context<'a, A> {
         }
     }
 
+    /// Set the application reference.
     pub fn with_app(mut self, app: &'a mut A) -> Self {
         self.app = Some(app);
         self
     }
 
+    /// Set the shared state reference.
     pub fn with_state(mut self, state: &'a mut dyn Any) -> Self {
         self.state = Some(state);
         self
@@ -83,6 +86,7 @@ impl<'a, A: ?Sized> Context<'a, A> {
     }
 
     // Deprecated or alias helper
+    /// Check if a flag is present (alias for is_present).
     pub fn has_flag(&self, name: &str) -> bool {
         self.is_present(name)
     }

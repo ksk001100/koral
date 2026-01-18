@@ -1,26 +1,24 @@
-use std::fmt;
+use thiserror::Error;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Error)]
+/// core error type for Koral
 pub enum KoralError {
+    /// Error parsing a flag value
+    #[error("Flag parse error: {0}")]
     FlagValueParseError(String),
+    /// Required argument is missing
+    #[error("Missing argument: {0}")]
     MissingArgument(String),
+    /// Invalid flag or command specified
+    #[error("Invalid flag/command: {0}")]
     InvalidFlag(String),
+    /// Unknown flag encountered
+    #[error("Unknown flag: {0}")]
     UnknownFlag(String),
+    /// General validation error
+    #[error("Validation error: {0}")]
     Validation(String),
 }
 
-impl fmt::Display for KoralError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            KoralError::FlagValueParseError(msg) => write!(f, "Flag parse error: {}", msg),
-            KoralError::MissingArgument(msg) => write!(f, "Missing argument: {}", msg),
-            KoralError::InvalidFlag(msg) => write!(f, "Invalid flag/command: {}", msg),
-            KoralError::UnknownFlag(msg) => write!(f, "Unknown flag: {}", msg),
-            KoralError::Validation(msg) => write!(f, "Validation error: {}", msg),
-        }
-    }
-}
-
-impl std::error::Error for KoralError {}
-
+/// Result type alias for Koral operations
 pub type KoralResult<T> = Result<T, KoralError>;

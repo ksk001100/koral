@@ -2,8 +2,15 @@
 name = "koral"
 version = "0.0.1-dev"
 edition = "2021"
+authors = ["ksk001100 <YOUR_EMAIL>"] # Placeholder
+description = "A macro-centric CLI framework for Rust emphasizing separation of definition and state."
+license = "MIT"
+repository = "https://github.com/ksk001100/koral"
+keywords = ["cli", "arguments", "parser", "macro"]
+categories = ["command-line-interface"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 koral_derive = { path = "koral_derive" }
+thiserror = "1.0"

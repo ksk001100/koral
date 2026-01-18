@@ -19,7 +19,9 @@ where
 
 /// Trait for types that can be parsed from a list of arguments (e.g. subcommands).
 pub trait FromArgs: Sized {
+    /// Parse from arguments.
     fn from_args(args: &[String]) -> KoralResult<Self>;
+    /// Get subcommand definitions.
     fn get_subcommands() -> Vec<crate::command::CommandDef> {
         vec![]
     }
@@ -101,6 +103,7 @@ pub trait App {
         self.execute(ctx)
     }
 
+    /// Print help message to stdout.
     fn print_help(&self) {
         println!("Usage: {} [options] [command]", self.name());
         let desc = self.description();

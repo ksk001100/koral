@@ -3,15 +3,22 @@ use crate::traits::FlagValue;
 /// Internal representation of a flag used by Parser and App.
 #[derive(Clone, Debug)]
 pub struct FlagDef {
+    /// Name of the flag
     pub name: String,
+    /// Short flag character (e.g. 'v')
     pub short: Option<char>,
+    /// Long flag name
     pub long: Option<String>,
+    /// Help text
     pub help: String,
+    /// Whether the flag accepts a value
     pub takes_value: bool,
+    /// Default value for the flag
     pub default_value: Option<String>,
 }
 
 impl FlagDef {
+    /// Create a FlagDef from a Flag trait implementation
     pub fn from_trait<F: Flag>() -> Self {
         Self {
             name: F::name().to_string(),
@@ -25,10 +32,12 @@ impl FlagDef {
 }
 
 // Re-defining for clarity and applying suggestion
+/// Trait defining a command-line flag.
 pub trait Flag
 where
     <Self::Value as std::str::FromStr>::Err: std::fmt::Display,
 {
+    /// The type of value this flag holds.
     type Value: FlagValue;
 
     /// The canonical name of the flag.

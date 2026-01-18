@@ -38,8 +38,11 @@ fn add_task(ctx: Context) -> KoralResult<()> {
     // We passed &mut Arc<...>, so ctx.state() gives &Arc<...>.
     let state = ctx
         .state::<Arc<Mutex<TodoState>>>()
-        .expect("State mismatch");
-    let mut guard = state.lock().unwrap();
+        .ok_or_else(|| KoralError::Validation("State not found".to_string()))?;
+
+    let mut guard = state
+        .lock()
+        .map_err(|_| KoralError::Validation("Lock poisoned".to_string()))?;
     guard.tasks.push(task.clone());
 
     println!("Added task: '{}'", task);
@@ -57,8 +60,11 @@ fn list_tasks(ctx: Context) -> KoralResult<()> {
     // Access state
     let state = ctx
         .state::<Arc<Mutex<TodoState>>>()
-        .expect("State mismatch");
-    let guard = state.lock().unwrap();
+        .ok_or_else(|| KoralError::Validation("State not found".to_string()))?;
+
+    let guard = state
+        .lock()
+        .map_err(|_| KoralError::Validation("Lock poisoned".to_string()))?;
 
     println!("Tasks:");
     for (i, task) in guard.tasks.iter().enumerate() {
@@ -80,8 +86,12 @@ fn complete_task(ctx: Context) -> KoralResult<()> {
         if let Ok(id) = id_str.parse::<usize>() {
             let state = ctx
                 .state::<Arc<Mutex<TodoState>>>()
-                .expect("State mismatch");
-            let mut guard = state.lock().unwrap();
+                .ok_or_else(|| KoralError::Validation("State not found".to_string()))?;
+
+            let mut guard = state
+                .lock()
+                .map_err(|_| KoralError::Validation("Lock poisoned".to_string()))?;
+
             if id > 0 && id <= guard.tasks.len() {
                 let removed = guard.tasks.remove(id - 1);
                 println!("Marked task '{}' as done.", removed);
@@ -126,7 +136,9 @@ impl Default for TodoCmd {
 }
 
 fn run_todo(ctx: Context) -> KoralResult<()> {
-    let app = ctx.app::<TodoApp>().unwrap();
+    let app = ctx
+        .app::<TodoApp>()
+        .ok_or_else(|| KoralError::Validation("App instance missing".to_string()))?;
 
     // Check global flags
     if ctx.get::<VerboseFlag>().unwrap_or(false) {
