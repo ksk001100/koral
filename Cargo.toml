@@ -2,7 +2,7 @@
 name = "koral"
 version = "0.0.1-dev"
 edition = "2021"
-authors = ["ksk001100 <YOUR_EMAIL>"] # Placeholder
+authors = ["Keisuke Toyota <hm.pudding0715@gmail.com>"]
 description = "A macro-centric CLI framework for Rust emphasizing separation of definition and state."
 license = "MIT"
 repository = "https://github.com/ksk001100/koral"
