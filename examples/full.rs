@@ -19,11 +19,7 @@ struct AllFlag;
 
 #[derive(Default, koral::App)]
 #[app(name = "add", action = add_task)]
-struct AddCmd {
-    // Positional args are handled in action
-    #[app(skip)]
-    task_name: String,
-}
+struct AddCmd;
 
 fn add_task(ctx: Context) -> KoralResult<()> {
     if ctx.args.is_empty() {
@@ -37,9 +33,8 @@ fn add_task(ctx: Context) -> KoralResult<()> {
 
 #[derive(Default, koral::App)]
 #[app(name = "list", action = list_tasks)]
-struct ListCmd {
-    all: AllFlag,
-}
+#[app(flags(AllFlag))]
+struct ListCmd;
 
 fn list_tasks(ctx: Context) -> KoralResult<()> {
     let show_all = ctx.get::<AllFlag>().unwrap_or(false);
@@ -55,10 +50,7 @@ fn list_tasks(ctx: Context) -> KoralResult<()> {
 
 #[derive(Default, koral::App)]
 #[app(name = "done", action = complete_task)]
-struct DoneCmd {
-    #[app(skip)]
-    id: i32,
-}
+struct DoneCmd;
 
 fn complete_task(ctx: Context) -> KoralResult<()> {
     if let Some(id_str) = ctx.args.first() {
@@ -73,8 +65,8 @@ fn complete_task(ctx: Context) -> KoralResult<()> {
 
 #[derive(koral::App)]
 #[app(name = "todo", version = "0.1.0", action = run_todo)]
+#[app(flags(VerboseFlag))]
 struct TodoApp {
-    verbose: VerboseFlag,
     #[app(subcommand)]
     cmd: TodoCmd,
 }
@@ -126,11 +118,7 @@ fn run_todo(ctx: Context) -> KoralResult<()> {
 }
 
 fn main() -> KoralResult<()> {
-    // Instantiate with default values (phantom flags)
-    // derive(App) generates TodoApp struct.
-
     let mut app = TodoApp {
-        verbose: VerboseFlag,
         cmd: TodoCmd::default(),
     };
 

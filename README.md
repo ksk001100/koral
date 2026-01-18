@@ -30,29 +30,35 @@ cargo add --git https://github.com/ksk001100/koral
 
 ### Simple Application
 
-Define your app and flags using macros. Note that the action handler `run` only takes `Context` as an argument, keeping it clean:
+### Simple Application
+
+Define your app and flags using macros. You can access the application instance state via `ctx.app`!
 
 ```rust
 use koral::traits::App;
 use koral::{Context, Flag, KoralResult};
 
-#[derive(Flag, Debug, Default)]
+#[derive(Flag, Debug)]
 #[flag(name = "verbose", short = 'v', help = "Enable verbose output")]
 struct VerboseFlag;
 
-#[derive(Flag, Debug, Default)]
+#[derive(Flag, Debug)]
 #[flag(name = "name", default = "World", help = "Name to greet")]
 struct NameFlag(String);
 
 #[derive(koral::App)]
 #[app(name = "greet", version = "1.0", action = run)]
+#[app(flags(VerboseFlag, NameFlag))]
 struct GreetApp {
-    verbose: VerboseFlag,
-    name: NameFlag,
+    greet_count: u32,
 }
 
-// Handler only needs Context!
-fn run(ctx: Context) -> KoralResult<()> {
+// Handler receives Context<GreetApp> to access the app instance
+fn run(mut ctx: Context<GreetApp>) -> KoralResult<()> {
+    if let Some(app) = &mut ctx.app {
+        app.greet_count += 1;
+    }
+
     let verbose = ctx.get::<VerboseFlag>().unwrap_or(false);
     let name = ctx.get::<NameFlag>().expect("Default value guaranteed");
 
@@ -64,8 +70,7 @@ fn run(ctx: Context) -> KoralResult<()> {
 }
 
 fn main() -> KoralResult<()> {
-    // Instantiate with default values
-    let mut app = GreetApp { verbose: VerboseFlag, name: NameFlag("".into()) };
+    let mut app = GreetApp { greet_count: 0 };
     app.run(std::env::args().skip(1).collect())
 }
 ```
@@ -109,4 +114,4 @@ cargo run --example full -- list --all
 | Example | Description | Command |
 |---------|-------------|---------|
 | `simple` | Basic usage with `derive(App)` | `cargo run --example simple` |
-| `full` | Todo App with subcommands and complex logic | `cargo run --example full -- help` |
+| `full` | Todo App with subcommands and complex logic | `cargo run --example full -- --help` |

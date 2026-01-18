@@ -86,7 +86,7 @@ pub fn impl_derive_subcommand(input: TokenStream) -> TokenStream {
         }
 
         cmd_defs.push(quote! {
-            koral::command::CommandDef::new(#cmd_name, ""),
+            koral::internal::command::CommandDef::new(#cmd_name, ""),
         });
     }
 
@@ -94,17 +94,17 @@ pub fn impl_derive_subcommand(input: TokenStream) -> TokenStream {
         impl koral::traits::FromArgs for #name {
             fn from_args(args: &[String]) -> koral::KoralResult<Self> {
                 if args.is_empty() {
-                    return Err(koral::error::KoralError::MissingArgument("No subcommand provided".to_string()));
+                    return Err(koral::internal::error::KoralError::MissingArgument("No subcommand provided".to_string()));
                 }
 
                 let sub_name = &args[0];
                 match sub_name.as_str() {
                     #(#match_arms)*
-                    _ => Err(koral::error::KoralError::InvalidFlag(format!("Unknown subcommand: {}", sub_name))),
+                    _ => Err(koral::internal::error::KoralError::InvalidFlag(format!("Unknown subcommand: {}", sub_name))),
                 }
             }
 
-            fn get_subcommands() -> Vec<koral::command::CommandDef> {
+            fn get_subcommands() -> Vec<koral::internal::command::CommandDef> {
                 vec![
                     #(#cmd_defs)*
                 ]

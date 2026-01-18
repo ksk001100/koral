@@ -72,7 +72,7 @@ pub trait App {
         // For now, let's just parse for THIS command.
 
         let ctx = {
-            let mut parser = crate::parser::Parser::new(self.flags());
+            let parser = crate::parser::Parser::new(self.flags());
             parser.parse(&args)?
         };
 

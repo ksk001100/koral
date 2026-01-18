@@ -10,6 +10,11 @@ pub fn impl_derive_app(input: TokenStream) -> TokenStream {
     let mut version = "0.0.0".to_string();
     let mut action_fn = None;
 
+    let mut flag_registrations = Vec::new();
+    let mut subcommand_registrations = Vec::new();
+
+    let mut flags_attribute_present = false;
+
     // Parse attributes
     for attr in input.attrs {
         if attr.path().is_ident("app") {
@@ -41,15 +46,30 @@ pub fn impl_derive_app(input: TokenStream) -> TokenStream {
                                 }
                             }
                         }
+                        Meta::List(list) => {
+                            if list.path.is_ident("flags") {
+                                flags_attribute_present = true;
+                                // flags(Flag1, Flag2)
+                                let types = list
+                                    .parse_args_with(
+                                        syn::punctuated::Punctuated::<syn::Type, syn::Token![,]>::parse_terminated,
+                                    )
+                                    .ok();
+                                if let Some(types) = types {
+                                    for ty in types {
+                                        flag_registrations.push(quote! {
+                                            flags.push(koral::internal::flag::FlagDef::from_trait::<#ty>());
+                                        });
+                                    }
+                                }
+                            }
+                        }
                         _ => {}
                     }
                 }
             }
         }
     }
-
-    let mut flag_registrations = Vec::new();
-    let mut subcommand_registrations = Vec::new();
 
     if let Data::Struct(data_struct) = input.data {
         if let Fields::Named(fields) = data_struct.fields {
@@ -90,11 +110,18 @@ pub fn impl_derive_app(input: TokenStream) -> TokenStream {
                          let _ = &self.#ident;
                          subs.extend(<#ty as koral::traits::FromArgs>::get_subcommands());
                     });
-                } else {
-                    // Assume it's a flag
+                } else if !flags_attribute_present {
+                    // Assume it's a flag ONLY if flags attribute was NOT used at top level.
+                    // If flags() is used, fields are ignored by default (treated as state).
                     flag_registrations.push(quote! {
                         let _ = &self.#ident;
-                        flags.push(koral::flag::FlagDef::from_trait::<#ty>());
+                        flags.push(koral::internal::flag::FlagDef::from_trait::<#ty>());
+                    });
+                } else {
+                    // flags attribute present, so treat field as state (ignore) by default.
+                    // Just silence unused warnings if any.
+                    flag_registrations.push(quote! {
+                         let _ = &self.#ident;
                     });
                 }
             }
@@ -104,7 +131,7 @@ pub fn impl_derive_app(input: TokenStream) -> TokenStream {
     let action_impl = if let Some(action) = action_fn {
         quote! {
             fn execute(&mut self, ctx: koral::Context) -> koral::KoralResult<()> {
-                koral::handler::call_handler(#action, self, ctx)
+                koral::internal::handler::call_handler(#action, self, ctx)
             }
         }
     } else {
@@ -125,13 +152,13 @@ pub fn impl_derive_app(input: TokenStream) -> TokenStream {
                 #version
             }
 
-            fn flags(&self) -> Vec<koral::flag::FlagDef> {
+            fn flags(&self) -> Vec<koral::internal::flag::FlagDef> {
                 let mut flags = Vec::new();
                 #(#flag_registrations)*
                 flags
             }
 
-            fn subcommands(&self) -> Vec<koral::command::CommandDef> {
+            fn subcommands(&self) -> Vec<koral::internal::command::CommandDef> {
                 let mut subs = Vec::new();
                 #(#subcommand_registrations)*
                 subs

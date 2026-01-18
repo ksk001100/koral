@@ -3,20 +3,35 @@ use std::collections::HashMap;
 
 /// Result of parsing command line arguments.
 #[derive(Debug, Default)]
-pub struct Context {
+pub struct Context<'a, A: ?Sized = ()> {
     /// Parsed flag values. Key is the flag name.
     /// Value is the string representation of the value, or empty string for boolean flags.
     pub flags: HashMap<String, Option<String>>,
 
     /// Positional arguments.
     pub args: Vec<String>,
+
+    /// Reference to the application instance.
+    pub app: Option<&'a mut A>,
 }
 
 use crate::flag::Flag;
 
-impl Context {
+impl<'a, A: ?Sized> Context<'a, A> {
     pub fn new(flags: HashMap<String, Option<String>>, args: Vec<String>) -> Self {
-        Self { flags, args }
+        Self {
+            flags,
+            args,
+            app: None,
+        }
+    }
+
+    pub fn with_app<'b, B: ?Sized>(self, app: &'b mut B) -> Context<'b, B> {
+        Context {
+            flags: self.flags,
+            args: self.args,
+            app: Some(app),
+        }
     }
 
     /// Check if a flag was present.

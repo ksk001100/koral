@@ -11,7 +11,7 @@ impl Parser {
         Self { known_flags: flags }
     }
 
-    pub fn parse(&mut self, args: &[String]) -> KoralResult<Context> {
+    pub fn parse<'a>(&self, args: &[String]) -> KoralResult<Context<'a>> {
         let mut flags_map: HashMap<String, Option<String>> = HashMap::new();
         let mut positionals: Vec<String> = Vec::new();
 
