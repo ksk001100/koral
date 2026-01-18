@@ -1,5 +1,8 @@
 use crate::traits::FlagValue;
 
+/// Validator function signature
+pub type Validator = fn(&str) -> Result<(), String>;
+
 /// Internal representation of a flag used by Parser and App.
 #[derive(Clone, Debug)]
 pub struct FlagDef {
@@ -18,7 +21,7 @@ pub struct FlagDef {
     /// Environment variable name to read from
     pub env: Option<String>,
     /// Validator function path
-    pub validator: Option<fn(&str) -> Result<(), String>>,
+    pub validator: Option<Validator>,
     /// Aliases for the flag
     pub aliases: Vec<String>,
 }
@@ -83,7 +86,8 @@ where
     }
 
     /// Validator function.
-    fn validator() -> Option<fn(&str) -> Result<(), String>> {
+    /// Validator function.
+    fn validator() -> Option<Validator> {
         None
     }
 

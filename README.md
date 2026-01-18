@@ -25,6 +25,7 @@ This approach keeps your application logic clean and decoupling it from the pars
 - **Flexible Handlers**: Action handlers can be `fn(Context)` or `fn(&mut App, Context)`.
 - **Validation**: Add custom validation logic to flags using `#[flag(validator = ...)]`.
 - **Aliases**: Define multiple names for flags and subcommands using `aliases`.
+- **Shell Completion**: Generate completion scripts for Bash, Zsh, and Fish.
 
 ## Installation
 
@@ -159,6 +160,18 @@ enum commands {
     #[subcommand(name = "remove", aliases = "rm, del")]
     Remove(RemoveCmd),
 }
+```
+
+### Shell Completion
+
+Generate completion scripts for your application.
+
+```rust
+use koral::completion::{Shell, generate_to};
+
+// Inside a subcommand handler
+let shell = Shell::Bash;
+generate_to(&app, shell, &mut std::io::stdout())?;
 ```
 
 ## Advanced Usage: Todo App

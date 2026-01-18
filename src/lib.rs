@@ -36,6 +36,8 @@
 
 pub(crate) mod app;
 pub(crate) mod command;
+/// Shell completion generation.
+pub mod completion;
 pub(crate) mod context;
 pub(crate) mod error;
 pub(crate) mod flag;
@@ -105,6 +107,7 @@ pub mod prelude {
 
 pub use app::App;
 pub use command::CommandDef;
+pub use completion::{generate_to, Shell};
 pub use context::Context;
 pub use error::{KoralError, KoralResult};
 pub use flag::{Flag, FlagDef};

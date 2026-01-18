@@ -18,6 +18,15 @@ pub enum KoralError {
     /// General validation error
     #[error("Validation error: {0}")]
     Validation(String),
+    /// IO error
+    #[error("IO error: {0}")]
+    IoError(String),
+}
+
+impl From<std::io::Error> for KoralError {
+    fn from(err: std::io::Error) -> Self {
+        KoralError::IoError(err.to_string())
+    }
 }
 
 /// Result type alias for Koral operations

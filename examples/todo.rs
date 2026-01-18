@@ -134,7 +134,7 @@ fn complete_task(ctx: Context) -> KoralResult<()> {
 
 // --- Main App ---
 
-#[derive(koral::App)]
+#[derive(koral::App, Default)]
 #[app(name = "todo", version = "0.1.0", action = run_todo)]
 #[app(flags(VerboseFlag))]
 struct TodoApp {
@@ -150,12 +150,37 @@ enum TodoCmd {
     List(ListCmd),
     #[subcommand(name = "done", aliases = "d")]
     Done(DoneCmd),
+    #[subcommand(name = "completion")]
+    Completion(CompletionCmd),
 }
 
 impl Default for TodoCmd {
     fn default() -> Self {
         Self::List(ListCmd::default())
     }
+}
+
+#[derive(App, Default)]
+#[app(name = "completion", action = completion_action)]
+struct CompletionCmd;
+
+fn completion_action(ctx: Context<CompletionCmd>) -> KoralResult<()> {
+    let shell_arg = ctx.args.first().map(|s| s.as_str()).unwrap_or("bash");
+    let shell = match shell_arg {
+        "bash" => koral::Shell::Bash,
+        "zsh" => koral::Shell::Zsh,
+        "fish" => koral::Shell::Fish,
+        _ => {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidInput,
+                format!("Unknown shell: {}", shell_arg),
+            )
+            .into())
+        }
+    };
+
+    let app = TodoApp::default();
+    koral::generate_to(&app, shell, &mut std::io::stdout()).map_err(|e| e.into())
 }
 
 fn run_todo(ctx: Context) -> KoralResult<()> {
