@@ -17,6 +17,8 @@ pub struct FlagDef {
     pub default_value: Option<String>,
     /// Environment variable name to read from
     pub env: Option<String>,
+    /// Validator function path
+    pub validator: Option<fn(&str) -> Result<(), String>>,
 }
 
 impl FlagDef {
@@ -30,6 +32,7 @@ impl FlagDef {
             takes_value: F::takes_value(),
             default_value: F::default_value().map(|v| v.to_string()),
             env: F::env().map(|s| s.to_string()),
+            validator: F::validator(),
         }
     }
 }
@@ -73,6 +76,11 @@ where
 
     /// Environment variable to populate the flag from.
     fn env() -> Option<&'static str> {
+        None
+    }
+
+    /// Validator function.
+    fn validator() -> Option<fn(&str) -> Result<(), String>> {
         None
     }
 }

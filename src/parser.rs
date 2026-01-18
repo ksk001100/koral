@@ -174,6 +174,20 @@ impl Parser {
             }
         }
 
+        // Validate flags
+        for flag in &self.known_flags {
+            if let Some(validator) = flag.validator {
+                if let Some(Some(val)) = flags_map.get(&flag.name) {
+                    if let Err(e) = validator(val) {
+                        return Err(KoralError::Validation(format!(
+                            "Invalid value for flag '{}': {}",
+                            flag.name, e
+                        )));
+                    }
+                }
+            }
+        }
+
         Ok(Context::new(flags_map, positionals))
     }
 

@@ -4,8 +4,17 @@ use koral::prelude::*;
 #[flag(name = "verbose", short = 'v', help = "Run with verbose output")]
 struct VerboseFlag;
 
+fn validate_count(s: &str) -> Result<(), String> {
+    if let Ok(val) = s.parse::<i32>() {
+        if val > 0 {
+            return Ok(());
+        }
+    }
+    Err("Count must be greater than 0".to_string())
+}
+
 #[derive(Flag, Debug)]
-#[flag(name = "count", default = "1", help = "Number of times to say hello")]
+#[flag(name = "count", default = "1", help = "Number of times to say hello", validator = validate_count)]
 struct CountFlag(#[allow(dead_code)] i32);
 
 #[derive(App)]

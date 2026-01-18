@@ -24,12 +24,20 @@ enum ListFormat {
     Detailed,
 }
 
+fn validate_format(s: &str) -> Result<(), String> {
+    match s {
+        "simple" | "detailed" => Ok(()),
+        _ => Err("Format must be 'simple' or 'detailed'".to_string()),
+    }
+}
+
 #[derive(Flag, Debug, Default)]
 #[flag(
     name = "format",
     short = 'f',
     default = "simple",
-    help = "Output format (simple, detailed)"
+    help = "Output format (simple, detailed)",
+    validator = validate_format
 )]
 struct FormatFlag(#[allow(dead_code)] ListFormat);
 

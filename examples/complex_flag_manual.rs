@@ -36,11 +36,26 @@ impl ToString for Person {
 // Note: We don't use derive(FlagValue) here because it doesn't support multi-field structs.
 // But since we implemented FromStr + ToString + Clone + Send + Sync manually,
 // Person automatically implements FlagValue trait!
+fn validate_person(s: &str) -> Result<(), String> {
+    let parts: Vec<&str> = s.split(',').collect();
+    if parts.len() != 2 {
+        return Err("Format must be 'name,age'".to_string());
+    }
+    let age = parts[1]
+        .parse::<u32>()
+        .map_err(|_| "Age must be a number".to_string())?;
+    if age == 0 {
+        return Err("Age must be positive".to_string());
+    }
+    Ok(())
+}
+
 #[derive(Flag, Debug)]
 #[flag(
     name = "person",
     short = 'p',
-    help = "Person info in 'name,age' format"
+    help = "Person info in 'name,age' format",
+    validator = validate_person
 )]
 struct PersonFlag(#[allow(dead_code)] Person);
 

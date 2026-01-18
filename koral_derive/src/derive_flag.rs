@@ -12,6 +12,7 @@ pub fn impl_derive_flag(input: TokenStream) -> TokenStream {
     let mut help = String::new();
     let mut default_val: Option<String> = None;
     let mut env_var: Option<String> = None;
+    let mut validator: Option<syn::Path> = None;
 
     // Parse attributes
     for attr in input.attrs {
@@ -54,6 +55,10 @@ pub fn impl_derive_flag(input: TokenStream) -> TokenStream {
                                     env_var = Some(lit.value());
                                 }
                             }
+                        } else if nv.path.is_ident("validator") {
+                            if let Expr::Path(expr_path) = nv.value {
+                                validator = Some(expr_path.path);
+                            }
                         }
                     }
                     _ => {}
@@ -82,6 +87,11 @@ pub fn impl_derive_flag(input: TokenStream) -> TokenStream {
 
     let env_quote = match env_var {
         Some(e) => quote! { Some(#e) },
+        None => quote! { None },
+    };
+
+    let validator_quote = match validator {
+        Some(v) => quote! { Some(#v) },
         None => quote! { None },
     };
 
@@ -120,6 +130,10 @@ pub fn impl_derive_flag(input: TokenStream) -> TokenStream {
 
             fn env() -> Option<&'static str> {
                 #env_quote
+            }
+
+            fn validator() -> Option<fn(&str) -> Result<(), String>> {
+                #validator_quote
             }
         }
     };

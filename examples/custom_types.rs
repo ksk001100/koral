@@ -22,12 +22,22 @@ struct FormatFlag(#[allow(dead_code)] OutputFormat);
 #[derive(FlagValue, Clone, Debug, PartialEq)]
 struct Timeout(u32);
 
+fn validate_timeout(s: &str) -> Result<(), String> {
+    let val: u32 = s.parse().map_err(|_| "Must be a number".to_string())?;
+    if val > 0 && val <= 3600 {
+        Ok(())
+    } else {
+        Err("Timeout must be between 1 and 3600 seconds".to_string())
+    }
+}
+
 #[derive(Flag, Debug)]
 #[flag(
     name = "timeout",
     short = 't',
     default = "30",
-    help = "Timeout in seconds"
+    help = "Timeout in seconds",
+    validator = validate_timeout
 )]
 struct TimeoutFlag(#[allow(dead_code)] Timeout);
 
