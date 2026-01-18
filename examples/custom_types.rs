@@ -48,5 +48,5 @@ fn run(ctx: Context<CustomTypeApp>) -> KoralResult<()> {
 }
 
 fn main() -> KoralResult<()> {
-    CustomTypeApp.run(std::env::args().skip(1).collect())
+    CustomTypeApp.run(std::env::args().collect())
 }

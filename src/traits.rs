@@ -52,6 +52,11 @@ pub trait App {
         vec![]
     }
 
+    /// Returns whether strict mode is enabled.
+    fn is_strict(&self) -> bool {
+        false
+    }
+
     /// Execute the application logic.
     fn execute(&mut self, ctx: Context) -> KoralResult<()>;
 
@@ -72,8 +77,14 @@ pub trait App {
         }
 
         let ctx = {
-            let parser = crate::parser::Parser::new(self.flags());
-            parser.parse(&args)?
+            let parser = crate::parser::Parser::new(self.flags()).strict(self.is_strict());
+            // Skip argv[0] (program name)
+            let args_to_parse = if args.len() > 0 {
+                &args[1..]
+            } else {
+                &args[..]
+            };
+            parser.parse(args_to_parse)?
         };
 
         // Inject state
@@ -96,8 +107,14 @@ pub trait App {
         }
 
         let ctx = {
-            let parser = crate::parser::Parser::new(self.flags());
-            parser.parse(&args)?
+            let parser = crate::parser::Parser::new(self.flags()).strict(self.is_strict());
+            // Skip argv[0] (program name)
+            let args_to_parse = if args.len() > 0 {
+                &args[1..]
+            } else {
+                &args[..]
+            };
+            parser.parse(args_to_parse)?
         };
 
         self.execute(ctx)

@@ -43,5 +43,5 @@ fn run(mut ctx: Context<SimpleApp>) -> KoralResult<()> {
 
 fn main() -> KoralResult<()> {
     let mut app = SimpleApp { call_count: 0 };
-    app.run(std::env::args().skip(1).collect())
+    app.run(std::env::args().collect())
 }

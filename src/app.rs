@@ -15,6 +15,7 @@ pub struct App {
     flags: Vec<FlagDef>,
     subcommands: Vec<Box<dyn AppTrait>>,
     action: Option<ActionFn>,
+    strict: bool,
 }
 
 impl App {
@@ -27,6 +28,7 @@ impl App {
             flags: Vec::new(),
             subcommands: Vec::new(),
             action: None,
+            strict: false,
         }
     }
 
@@ -42,17 +44,15 @@ impl App {
         self
     }
 
+    /// Set strict mode (fail on unknown flags).
+    pub fn strict(mut self, strict: bool) -> Self {
+        self.strict = strict;
+        self
+    }
+
     /// Register a type-based flag.
     pub fn register<F: Flag + 'static>(mut self) -> Self {
-        let def = FlagDef {
-            name: F::name().to_string(),
-            short: F::short(),
-            long: F::long().map(|s| s.to_string()),
-            help: F::help().to_string(),
-            takes_value: F::takes_value(),
-            default_value: F::default_value().map(|v| v.to_string()),
-        };
-        self.flags.push(def);
+        self.flags.push(crate::flag::FlagDef::from_trait::<F>());
         self
     }
 
@@ -92,6 +92,10 @@ impl AppTrait for App {
 
     fn flags(&self) -> Vec<FlagDef> {
         self.flags.clone()
+    }
+
+    fn is_strict(&self) -> bool {
+        self.strict
     }
 
     fn subcommands(&self) -> Vec<crate::command::CommandDef> {
@@ -175,7 +179,8 @@ mod tests {
                 Ok(())
             });
 
-        app.run(vec!["--verbose".to_string()]).unwrap();
+        app.run(vec!["test".to_string(), "--verbose".to_string()])
+            .unwrap();
         // Since bool defaults to takes_value=false but we didn't override it in VerboseFlag yet?
         // Wait, FlagValue for bool defaults takes_value = false.
         // So "--verbose" should be enough.
@@ -201,7 +206,8 @@ mod tests {
                 Ok(())
             });
 
-        app.run(vec!["--verbose".to_string()]).unwrap();
+        app.run(vec!["test".to_string(), "--verbose".to_string()])
+            .unwrap();
         assert!(*executed.lock().unwrap());
     }
 }

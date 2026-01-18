@@ -12,7 +12,16 @@ pub fn impl_derive_subcommand(input: TokenStream) -> TokenStream {
     };
 
     let mut match_arms = Vec::new();
+
     let mut cmd_defs = Vec::new();
+
+    // For App implementation
+    let mut run_arms = Vec::new();
+    let mut run_state_arms = Vec::new();
+    let mut execute_arms = Vec::new();
+    let mut name_arms = Vec::new();
+    let mut flag_arms = Vec::new(); // Usually empty or delegated?
+    let mut sub_arms = Vec::new();
 
     for variant in variants {
         let variant_name = variant.ident;
@@ -81,6 +90,28 @@ pub fn impl_derive_subcommand(input: TokenStream) -> TokenStream {
                         Ok(Self::#variant_name(Default::default()))
                     },
                 });
+
+                // App delegators
+                run_arms.push(quote! {
+                    Self::#variant_name(cmd) => cmd.run(args),
+                });
+                run_state_arms.push(quote! {
+                    Self::#variant_name(cmd) => cmd.run_with_state(state, args),
+                });
+                execute_arms.push(quote! {
+                    Self::#variant_name(cmd) => cmd.execute(ctx),
+                });
+                name_arms.push(quote! {
+                    Self::#variant_name(cmd) => cmd.name(),
+                });
+                sub_arms.push(quote! {
+                    Self::#variant_name(cmd) => cmd.subcommands(),
+                });
+                // Flags are tricky. Usually we want the flags of the active variant?
+                // But App::flags() is static-like (called on instance).
+                flag_arms.push(quote! {
+                    Self::#variant_name(cmd) => cmd.flags(),
+                });
             }
             _ => panic!("Subcommand variants must be Unit or Tuple with 1 element"),
         }
@@ -108,6 +139,52 @@ pub fn impl_derive_subcommand(input: TokenStream) -> TokenStream {
                 vec![
                     #(#cmd_defs)*
                 ]
+            }
+        }
+
+        impl koral::traits::App for #name {
+            fn name(&self) -> &str {
+                match self {
+                    #(#name_arms)*
+                }
+            }
+
+            fn execute(&mut self, ctx: koral::Context) -> koral::KoralResult<()> {
+                match self {
+                    #(#execute_arms)*
+                }
+            }
+
+            fn run(&mut self, args: Vec<String>) -> koral::KoralResult<()> {
+                match self {
+                    #(#run_arms)*
+                }
+            }
+
+            fn run_with_state(&mut self, state: &mut dyn std::any::Any, args: Vec<String>) -> koral::KoralResult<()> {
+                match self {
+                    #(#run_state_arms)*
+                }
+            }
+
+            fn subcommands(&self) -> Vec<koral::internal::command::CommandDef> {
+               // Usually static list of all possible subcommands
+               /*
+                  Note: This method is used for help generation of the *Enum itself*?
+                  Or is it simply delegating?
+                  If this Enum is a field in ParentApp, ParentApp calls `get_subcommands()` from `FromArgs`.
+
+                  If we treat this Enum as the App itself, `subcommands()` should probably return all variants?
+                  Same as `FromArgs::get_subcommands()`.
+               */
+               <Self as koral::traits::FromArgs>::get_subcommands()
+            }
+
+            fn flags(&self) -> Vec<koral::internal::flag::FlagDef> {
+                // Return flags of the active variant?
+                match self {
+                    #(#flag_arms)*
+                }
             }
         }
     };

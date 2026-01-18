@@ -11,6 +11,7 @@ pub fn impl_derive_flag(input: TokenStream) -> TokenStream {
     let mut short = None;
     let mut help = String::new();
     let mut default_val: Option<String> = None;
+    let mut env_var: Option<String> = None;
 
     // Parse attributes
     for attr in input.attrs {
@@ -47,6 +48,12 @@ pub fn impl_derive_flag(input: TokenStream) -> TokenStream {
                                     default_val = Some(lit.value());
                                 }
                             }
+                        } else if nv.path.is_ident("env") {
+                            if let Expr::Lit(expr_lit) = nv.value {
+                                if let Lit::Str(lit) = expr_lit.lit {
+                                    env_var = Some(lit.value());
+                                }
+                            }
                         }
                     }
                     _ => {}
@@ -70,6 +77,11 @@ pub fn impl_derive_flag(input: TokenStream) -> TokenStream {
 
     let short_quote = match short {
         Some(c) => quote! { Some(#c) },
+        None => quote! { None },
+    };
+
+    let env_quote = match env_var {
+        Some(e) => quote! { Some(#e) },
         None => quote! { None },
     };
 
@@ -105,6 +117,10 @@ pub fn impl_derive_flag(input: TokenStream) -> TokenStream {
             }
 
             #default_impl
+
+            fn env() -> Option<&'static str> {
+                #env_quote
+            }
         }
     };
 

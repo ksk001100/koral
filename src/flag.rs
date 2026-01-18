@@ -15,6 +15,8 @@ pub struct FlagDef {
     pub takes_value: bool,
     /// Default value for the flag
     pub default_value: Option<String>,
+    /// Environment variable name to read from
+    pub env: Option<String>,
 }
 
 impl FlagDef {
@@ -27,6 +29,7 @@ impl FlagDef {
             help: F::help().to_string(),
             takes_value: F::takes_value(),
             default_value: F::default_value().map(|v| v.to_string()),
+            env: F::env().map(|s| s.to_string()),
         }
     }
 }
@@ -65,6 +68,11 @@ where
 
     /// Default value if not provided.
     fn default_value() -> Option<Self::Value> {
+        None
+    }
+
+    /// Environment variable to populate the flag from.
+    fn env() -> Option<&'static str> {
         None
     }
 }

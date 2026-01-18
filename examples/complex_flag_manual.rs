@@ -59,5 +59,5 @@ fn run(ctx: Context<App>) -> KoralResult<()> {
 }
 
 fn main() -> KoralResult<()> {
-    App.run(std::env::args().skip(1).collect())
+    App.run(std::env::args().collect())
 }
