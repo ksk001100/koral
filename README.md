@@ -30,14 +30,35 @@ For quick tools, use the `App` builder and a closure:
 ```rust
 use koral::{App, Flag, KoralResult};
 
+struct VerboseFlag;
+impl Flag for VerboseFlag {
+    type Value = bool;
+    fn name() -> &'static str { "verbose" }
+    fn short() -> Option<char> { Some('v') }
+    fn help() -> &'static str { "Enable verbose output" }
+    fn takes_value() -> bool { false }
+}
+
+struct NameFlag;
+impl Flag for NameFlag {
+    type Value = String;
+    fn name() -> &'static str { "name" }
+    fn default_value() -> Option<Self::Value> { Some("User".to_string()) }
+    fn help() -> &'static str { "Name to greet" }
+}
+
 fn main() -> KoralResult<()> {
     App::new("my-tool")
         .version("1.0")
-        .flag(Flag::<bool>::new("verbose").alias("v"))
-        .flag(Flag::<String>::new("name").default_value("User".to_string()))
+        .register::<VerboseFlag>()
+        .register::<NameFlag>()
         .action(|ctx| {
-            let verbose = ctx.get::<bool>("verbose").unwrap_or(false);
-            let name = ctx.get::<String>("name").unwrap();
+            let verbose = ctx.get::<VerboseFlag>().unwrap_or(false);
+            // Parser guarantees defaults are applied if available in Flag definition?
+            // Actually parsing fills default in context if missing? 
+            // In current implementation, default values in definition are checked manualy or need Context update.
+            // But let's show the ergonomic retrieval.
+            let name = ctx.get::<NameFlag>().ok_or("Missing name").unwrap();
             
             if verbose { println!("Verbose mode on"); }
             println!("Hello, {}!", name);

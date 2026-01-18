@@ -1,11 +1,38 @@
-use koral::{Flag, KoralResult, Context};
-use koral::traits::{App as AppTrait, Flag as FlagTrait};
+use koral::flag::FlagDef;
+use koral::traits::App as AppTrait;
+use koral::{Context, Flag, KoralResult};
+
+struct VerboseFlag;
+impl Flag for VerboseFlag {
+    type Value = bool;
+    fn name() -> &'static str {
+        "verbose"
+    }
+    fn short() -> Option<char> {
+        Some('v')
+    }
+    fn takes_value() -> bool {
+        false
+    }
+}
+
+struct NameFlag;
+impl Flag for NameFlag {
+    type Value = String;
+    fn name() -> &'static str {
+        "name"
+    }
+    fn short() -> Option<char> {
+        Some('n')
+    }
+    fn default_value() -> Option<Self::Value> {
+        Some("Guest".to_string())
+    }
+}
 
 struct MyApp {
     verbose: bool,
     name: String,
-    v_flag: Flag<bool>,
-    n_flag: Flag<String>,
 }
 
 impl MyApp {
@@ -13,8 +40,6 @@ impl MyApp {
         Self {
             verbose: false,
             name: "Guest".to_string(),
-            v_flag: Flag::new("verbose").alias("v"),
-            n_flag: Flag::new("name").alias("n").default_value("Guest".to_string()),
         }
     }
 }
@@ -24,29 +49,26 @@ impl AppTrait for MyApp {
         "my-app"
     }
 
-    fn flags(&self) -> Vec<&dyn FlagTrait> {
+    fn flags(&self) -> Vec<FlagDef> {
         vec![
-            &self.v_flag as &dyn FlagTrait, 
-            &self.n_flag as &dyn FlagTrait
+            FlagDef::from_trait::<VerboseFlag>(),
+            FlagDef::from_trait::<NameFlag>(),
         ]
     }
 
     fn execute(&mut self, ctx: Context) -> KoralResult<()> {
-        if let Some(v) = ctx.get("verbose") {
-            self.verbose = v;
+        if let Some(name) = ctx.get::<NameFlag>() {
+            self.name = name;
         }
 
-        if let Some(n) = ctx.get("name") {
-            self.name = n;
-        } else if let Some(def) = &self.n_flag.default_value {
-            self.name = def.clone();
+        if ctx.get::<VerboseFlag>().unwrap_or(false) {
+            self.verbose = true;
         }
 
         println!("Hello, {}!", self.name);
         if self.verbose {
-            println!("Verbose mode is enabled.");
+            println!("(Verbose mode enabled)");
         }
-
         Ok(())
     }
 }

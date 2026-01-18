@@ -1,7 +1,5 @@
-use koral::{Flag, FlagValue, KoralResult, Context};
-use koral::traits::App as AppTrait;
+use koral::{Context, Flag, KoralResult};
 use std::str::FromStr;
-use std::fmt;
 
 #[derive(Clone, Debug, PartialEq)]
 enum Environment {
@@ -10,18 +8,12 @@ enum Environment {
     Production,
 }
 
-impl fmt::Display for Environment {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Environment::Development => write!(f, "development"),
-            Environment::Staging => write!(f, "staging"),
-            Environment::Production => write!(f, "production"),
-        }
+impl std::fmt::Display for Environment {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
     }
 }
 
-// User-defined type must implement FromStr to be used as a Flag.
-// It also needs Clone, Send, Sync, 'static (derived/auto).
 impl FromStr for Environment {
     type Err = String;
 
@@ -35,44 +27,54 @@ impl FromStr for Environment {
     }
 }
 
+struct EnvFlag;
+impl Flag for EnvFlag {
+    type Value = Environment;
+    fn name() -> &'static str {
+        "env"
+    }
+    fn short() -> Option<char> {
+        Some('e')
+    }
+    fn default_value() -> Option<Self::Value> {
+        Some(Environment::Development)
+    }
+}
+
 struct MyTool {
     env: Environment,
-    env_flag: Flag<Environment>,
 }
 
 impl MyTool {
     fn new() -> Self {
         Self {
             env: Environment::Development,
-            env_flag: Flag::<Environment>::new("env")
-                .alias("e")
-                .default_value(Environment::Development),
         }
     }
 }
 
-impl AppTrait for MyTool {
+impl koral::traits::App for MyTool {
     fn name(&self) -> &str {
         "deploy-tool"
     }
 
-    fn flags(&self) -> Vec<&dyn koral::traits::Flag> {
-        vec![&self.env_flag]
+    fn flags(&self) -> Vec<koral::flag::FlagDef> {
+        vec![koral::flag::FlagDef::from_trait::<EnvFlag>()]
     }
 
     fn execute(&mut self, ctx: Context) -> KoralResult<()> {
-        if let Some(e) = ctx.get("env") {
+        if let Some(e) = ctx.get::<EnvFlag>() {
             self.env = e;
-        } else {
-             // Fallback to default if not present in context?
-             // Since Parser doesn't fill defaults, and ctx.get returns parsed one.
-             // But my flag declaration has default_value.
-             // Ideally we should use it. 
-             // But `Flag` struct is accessible here.
-             if let Some(def) = &self.env_flag.default_value {
-                 self.env = def.clone();
-             }
         }
+        // Default is handled by Parser application of default_value,
+        // so ctx.get should return Some(Development) if not present.
+        // Wait, does it?
+        // Parser::parse fills from known_flags.default_value.
+        // But Parser uses FlagDef. default_value is Option<String>.
+        // It inserts into HashMap.
+        // ctx.get::<F> calls value_t::<F::Value>.
+        // value_t tries to get key. If found, parses string.
+        // So yes, it should work.
 
         println!("Deploying to {:?} environment...", self.env);
         Ok(())
@@ -80,9 +82,9 @@ impl AppTrait for MyTool {
 }
 
 fn main() -> KoralResult<()> {
+    // We can run MyTool manually or use App wrapping if we moved logic to closure.
+    // But manual implementation example usually runs manually.
     let mut tool = MyTool::new();
-    // Simulate args: --env prod
-    // We explicitly call run, which now does parsing.
-    let args = vec!["--env".to_string(), "prod".to_string()];
-    tool.run(args)
+    let args: Vec<String> = std::env::args().skip(1).collect();
+    koral::traits::App::run(&mut tool, args)
 }

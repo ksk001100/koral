@@ -1,67 +1,61 @@
 use crate::traits::FlagValue;
 
-/// A command line flag.
-///
-/// Flags are used to parse named arguments (e.g. `--verbose`, `--count 3`).
-/// They are generic over the type `T` which implements `FlagValue`.
+/// Internal representation of a flag used by Parser and App.
 #[derive(Clone, Debug)]
-pub struct Flag<T: FlagValue> {
+pub struct FlagDef {
     pub name: String,
-    pub aliases: Vec<String>,
-    pub description: String,
-    pub default_value: Option<T>,
+    pub short: Option<char>,
+    pub long: Option<String>,
+    pub help: String,
+    pub takes_value: bool,
+    pub default_value: Option<String>,
 }
 
-impl<T: FlagValue> Flag<T> {
-    /// Create a new flag with the given name.
-    ///
-    /// The name should be specified without the leading dashes (e.g. "verbose" for `--verbose`).
-    pub fn new(name: impl Into<String>) -> Self {
+impl FlagDef {
+    pub fn from_trait<F: Flag>() -> Self {
         Self {
-            name: name.into(),
-            aliases: Vec::new(),
-            description: String::new(),
-            default_value: None,
+            name: F::name().to_string(),
+            short: F::short(),
+            long: F::long().map(|s| s.to_string()),
+            help: F::help().to_string(),
+            takes_value: F::takes_value(),
+            default_value: F::default_value().map(|v| v.to_string()),
         }
     }
-
-    /// Add an alias for the flag.
-    ///
-    /// Aliases are usually short versions (e.g. "v" for `-v`).
-    pub fn alias(mut self, alias: impl Into<String>) -> Self {
-        self.aliases.push(alias.into());
-        self
-    }
-
-    /// Set the description of the flag for help messages.
-    pub fn description(mut self, description: impl Into<String>) -> Self {
-        self.description = description.into();
-        self
-    }
-
-    /// Set a default value for the flag if it is not present in the arguments.
-    pub fn default_value(mut self, value: T) -> Self {
-        self.default_value = Some(value);
-        self
-    }
-
 }
 
-impl<T: FlagValue> crate::traits::Flag for Flag<T> {
-    fn name(&self) -> &str {
-        &self.name
+// Re-defining for clarity and applying suggestion
+pub trait Flag
+where
+    <Self::Value as std::str::FromStr>::Err: std::fmt::Display,
+{
+    type Value: FlagValue;
+
+    /// The canonical name of the flag.
+    fn name() -> &'static str;
+
+    /// Optional short character (e.g. 'v' for -v).
+    fn short() -> Option<char> {
+        None
     }
 
-    fn description(&self) -> &str {
-        &self.description
+    /// Optional long name if different from name.
+    fn long() -> Option<&'static str> {
+        None
     }
 
-    fn aliases(&self) -> Vec<&str> {
-        self.aliases.iter().map(|s| s.as_str()).collect()
+    /// Help text.
+    fn help() -> &'static str {
+        ""
     }
 
-    fn takes_value(&self) -> bool {
-        T::takes_value()
+    /// Whether the flag takes a value. Defaults to true.
+    fn takes_value() -> bool {
+        true
+    }
+
+    /// Default value if not provided.
+    fn default_value() -> Option<Self::Value> {
+        None
     }
 }
-

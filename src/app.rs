@@ -1,18 +1,14 @@
-use crate::error::KoralResult;
-use crate::traits::{App as AppTrait, Flag as FlagTrait};
-use crate::flag::Flag;
-use crate::traits::FlagValue;
 use crate::context::Context;
+use crate::error::KoralResult;
+use crate::flag::{Flag, FlagDef};
+use crate::traits::App as AppTrait;
+// Import FlagValue to inspect takes_value
 
-/// The default implementation of a CLI application.
-///
-/// This struct allows for constructing a CLI using the builder pattern.
-/// It implements `koral::traits::App` so it benefits from the standard lifecycle.
 pub struct App {
     name: String,
     version: String,
     description: String,
-    flags: Vec<Box<dyn FlagTrait>>,
+    flags: Vec<FlagDef>,
     subcommands: Vec<Box<dyn AppTrait>>,
     action: Option<Box<dyn Fn(Context) -> KoralResult<()>>>,
 }
@@ -42,9 +38,17 @@ impl App {
         self
     }
 
-    /// Register a flag.
-    pub fn flag<T: FlagValue>(mut self, flag: Flag<T>) -> Self {
-        self.flags.push(Box::new(flag));
+    /// Register a type-based flag.
+    pub fn register<F: Flag + 'static>(mut self) -> Self {
+        let def = FlagDef {
+            name: F::name().to_string(),
+            short: F::short(),
+            long: F::long().map(|s| s.to_string()),
+            help: F::help().to_string(),
+            takes_value: F::takes_value(),
+            default_value: F::default_value().map(|v| v.to_string()),
+        };
+        self.flags.push(def);
         self
     }
 
@@ -55,10 +59,9 @@ impl App {
     }
 
     /// Set the action to be executed when the application runs.
-    ///
-    /// The action receives the `Context` containing parsed flags and arguments.
-    pub fn action<F>(mut self, action: F) -> Self 
-    where F: Fn(Context) -> KoralResult<()> + 'static 
+    pub fn action<F>(mut self, action: F) -> Self
+    where
+        F: Fn(Context) -> KoralResult<()> + 'static,
     {
         self.action = Some(Box::new(action));
         self
@@ -83,8 +86,8 @@ impl AppTrait for App {
         &self.description
     }
 
-    fn flags(&self) -> Vec<&dyn FlagTrait> {
-        self.flags.iter().map(|b| b.as_ref()).collect()
+    fn flags(&self) -> Vec<FlagDef> {
+        self.flags.clone()
     }
 
     fn subcommands(&self) -> Vec<&dyn AppTrait> {
@@ -100,41 +103,96 @@ impl AppTrait for App {
     }
 }
 
+// Manual Debug impl to skip action closure
+impl std::fmt::Debug for App {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("App")
+            .field("name", &self.name)
+            .field("version", &self.version)
+            .field("description", &self.description)
+            .field("flags", &self.flags)
+            // Skip subcommands if AppTrait usually doesn't strictly require Debug,
+            // but subcommands usually interesting.
+            // We can't debug subcommands if AppTrait doesn't require Debug.
+            // Let's skip subcommands too or format len.
+            .field("subcommands_count", &self.subcommands.len())
+            .finish()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    struct VerboseFlag;
+    impl Flag for VerboseFlag {
+        type Value = bool;
+        fn name() -> &'static str {
+            "verbose"
+        }
+        fn short() -> Option<char> {
+            Some('v')
+        }
+        fn takes_value() -> bool {
+            false
+        }
+    }
 
     #[test]
     fn test_app_builder() {
         let app = App::new("test-app")
             .version("1.2.3")
             .description("A test app");
-        
+
         assert_eq!(app.name(), "test-app");
-        assert_eq!(app.version(), "1.2.3");
-        assert_eq!(app.description(), "A test app");
+        assert_eq!(AppTrait::version(&app), "1.2.3");
+        assert_eq!(AppTrait::description(&app), "A test app");
     }
 
     #[test]
     fn test_app_execution() {
         use std::sync::{Arc, Mutex};
-        
+
         let executed = Arc::new(Mutex::new(false));
         let executed_clone = executed.clone();
 
         let mut app = App::new("test")
-            .flag(Flag::<bool>::new("verbose"))
+            .register::<VerboseFlag>()
             .action(move |ctx| {
                 let mut guard = executed_clone.lock().unwrap();
                 *guard = true;
                 // Verify context was passed
-                assert!(ctx.has_flag("verbose"));
+                assert!(ctx.get::<VerboseFlag>().unwrap_or(false));
                 Ok(())
             });
 
         app.run(vec!["--verbose".to_string()]).unwrap();
-        
+        // Since bool defaults to takes_value=false but we didn't override it in VerboseFlag yet?
+        // Wait, FlagValue for bool defaults takes_value = false.
+        // So "--verbose" should be enough.
+        // BUT my test registers VerboseFlag.
+        // FlagValue trait impl for bool: if type_name=="bool" -> false.
+        // So yes.
+        // BUT the test passed arguments `vec!["--verbose".to_string(), "true".to_string()]`?
+        // If takes_value is false, "true" would be seen as positional.
+        // I should fix the test case args.
+    }
+
+    #[test]
+    fn test_app_execution_bool() {
+        use std::sync::{Arc, Mutex};
+        let executed = Arc::new(Mutex::new(false));
+        let executed_clone = executed.clone();
+
+        let mut app = App::new("test")
+            .register::<VerboseFlag>()
+            .action(move |ctx| {
+                *executed_clone.lock().unwrap() = true;
+                assert!(ctx.get::<VerboseFlag>().unwrap_or(false));
+                Ok(())
+            });
+
+        app.run(vec!["--verbose".to_string()]).unwrap();
         assert!(*executed.lock().unwrap());
     }
 }
-

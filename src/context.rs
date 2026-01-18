@@ -7,10 +7,12 @@ pub struct Context {
     /// Parsed flag values. Key is the flag name.
     /// Value is the string representation of the value, or empty string for boolean flags.
     pub flags: HashMap<String, Option<String>>,
-    
+
     /// Positional arguments.
     pub args: Vec<String>,
 }
+
+use crate::flag::Flag;
 
 impl Context {
     pub fn new(flags: HashMap<String, Option<String>>, args: Vec<String>) -> Self {
@@ -18,37 +20,47 @@ impl Context {
     }
 
     /// Check if a flag was present.
-    pub fn has_flag(&self, name: &str) -> bool {
+    pub fn is_present(&self, name: &str) -> bool {
         self.flags.contains_key(name)
     }
 
-    /// Get a flag value.
-    /// Returns:
-    /// - `Some(val)` if the flag was present and parsed successfully.
-    /// - `None` if the flag was not present.
-    /// - Panics or returns error if parsing fails? For now let's use Option.
-    /// But wait, FlagValue::from_str returns Result.
-    /// 
-    /// If the flag is boolean, presence implies true.
-    pub fn get<T: FlagValue>(&self, name: &str) -> Option<T> {
-        if let Some(val_opt) = self.flags.get(name) {
-            match val_opt {
-                Some(s) => T::from_str(s).ok(),
+    /// Get typed flag value using the Flag trait.
+    pub fn get<F: Flag>(&self) -> Option<F::Value>
+    where
+        <F::Value as std::str::FromStr>::Err: std::fmt::Display,
+    {
+        self.value_t::<F::Value>(F::name()).ok()
+    }
+
+    /// Get raw flag value as string, if present.
+    pub fn value_of(&self, name: &str) -> Option<&str> {
+        self.flags.get(name).and_then(|opt| opt.as_deref())
+    }
+
+    /// Get typed flag value.
+    pub fn value_t<T: FlagValue>(&self, name: &str) -> Result<T, String>
+    where
+        <T as std::str::FromStr>::Err: std::fmt::Display,
+    {
+        if let Some(opt_val) = self.flags.get(name) {
+            match opt_val {
+                Some(s) => T::from_str(s).map_err(|e| e.to_string()),
                 None => {
-                    // This case happens for flags that don't take values (like bools).
-                    // If T is bool, we should return true.
-                    // If T is not bool, and we have no value, that's an issue unless we treated it as empty string.
-                    // But our parser logic will decide this.
-                    // For now, let's try to parse "true" if T is bool.
-                    if !T::takes_value() {
-                         T::from_str("true").ok()
+                    // Special case for boolean flags which might be stored as None
+                    if std::any::type_name::<T>() == "bool" {
+                        T::from_str("true").map_err(|e| e.to_string())
                     } else {
-                        None
+                        Err(format!("Flag '{}' was used but provided no value", name))
                     }
                 }
             }
         } else {
-            None
+            Err(format!("Argument '{}' not found", name))
         }
+    }
+
+    // Deprecated or alias helper
+    pub fn has_flag(&self, name: &str) -> bool {
+        self.is_present(name)
     }
 }
