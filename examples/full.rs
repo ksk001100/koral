@@ -174,7 +174,9 @@ fn run_todo(ctx: Context) -> KoralResult<()> {
 fn main() -> KoralResult<()> {
     let mut app = TodoApp {
         cmd: TodoCmd::default(),
-        state: Arc::new(Mutex::new(TodoState { tasks: vec![] })),
+        state: Arc::new(Mutex::new(TodoState {
+            tasks: vec!["Task1".to_string()],
+        })),
     };
 
     app.run(std::env::args().skip(1).collect())

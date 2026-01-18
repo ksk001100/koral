@@ -30,8 +30,6 @@ cargo add --git https://github.com/ksk001100/koral
 
 ### Simple Application
 
-### Simple Application
-
 Define your app and flags using macros. You can access the application instance state via `ctx.app`!
 
 ```rust
@@ -87,6 +85,7 @@ Check `examples/full.rs` for a complete Todo application demonstrating:
 *   **Subcommands**: `add`, `list`, `done`
 *   **Positional Arguments**: `todo add "Buy milk"`
 *   **Global & Local Flags**: `--all`, `--verbose`
+*   **Shared State**: `Arc<Mutex<TodoState>>`
 
 ```rust
 // Action handler for a subcommand
@@ -96,6 +95,14 @@ fn add_task(ctx: Context) -> KoralResult<()> {
         return Ok(());
     }
     let task = ctx.args.join(" ");
+    
+    // Access shared state
+    let state = ctx
+        .state::<Arc<Mutex<TodoState>>>()
+        .expect("State mismatch");
+    let mut guard = state.lock().unwrap();
+    guard.tasks.push(task.clone());
+
     println!("Added task: '{}'", task);
     Ok(())
 }

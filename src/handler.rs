@@ -5,6 +5,8 @@ pub struct WithApp;
 pub struct WithoutApp;
 pub struct IgnoreApp;
 
+pub struct TypedApp;
+
 pub trait Handler<A: ?Sized, Marker> {
     fn call(&self, app: &mut A, ctx: Context) -> KoralResult<()>;
 }
@@ -22,7 +24,26 @@ where
     }
 }
 
-// Handler taking only Context (New Preferred Style)
+// Handler taking only Context (New Preferred Style - Typed)
+impl<A, F> Handler<A, TypedApp> for F
+where
+    A: Any, // A must be Any because Context<A> expects A: ?Sized, and our App trait impls are sized usually but Any covers it.
+    // Actually A doesn't need to be Any for Context<A>, but usually is for dynamic fallback.
+    F: Fn(Context<A>) -> KoralResult<()>,
+{
+    fn call(&self, app: &mut A, ctx: Context) -> KoralResult<()> {
+        // reconstruct typed context
+        let typed_ctx = Context {
+            flags: ctx.flags,
+            args: ctx.args,
+            state: ctx.state,
+            app: Some(app),
+        };
+        (self)(typed_ctx)
+    }
+}
+
+// Handler taking only Context (Old Style - Dynamic)
 impl<A, F> Handler<A, WithoutApp> for F
 where
     A: Any,
