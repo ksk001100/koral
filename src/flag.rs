@@ -19,6 +19,8 @@ pub struct FlagDef {
     pub env: Option<String>,
     /// Validator function path
     pub validator: Option<fn(&str) -> Result<(), String>>,
+    /// Aliases for the flag
+    pub aliases: Vec<String>,
 }
 
 impl FlagDef {
@@ -33,6 +35,7 @@ impl FlagDef {
             default_value: F::default_value().map(|v| v.to_string()),
             env: F::env().map(|s| s.to_string()),
             validator: F::validator(),
+            aliases: F::aliases().into_iter().map(|s| s.to_string()).collect(),
         }
     }
 }
@@ -82,5 +85,10 @@ where
     /// Validator function.
     fn validator() -> Option<fn(&str) -> Result<(), String>> {
         None
+    }
+
+    /// Aliases for the flag.
+    fn aliases() -> Vec<&'static str> {
+        vec![]
     }
 }

@@ -37,7 +37,8 @@ fn validate_timeout(s: &str) -> Result<(), String> {
     short = 't',
     default = "30",
     help = "Timeout in seconds",
-    validator = validate_timeout
+    validator = validate_timeout,
+    aliases = "time"
 )]
 struct TimeoutFlag(#[allow(dead_code)] Timeout);
 

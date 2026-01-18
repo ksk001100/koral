@@ -23,6 +23,8 @@ This approach keeps your application logic clean and decoupling it from the pars
 - **Reuse**: Define a `VerboseFlag` once and reuse it across multiple subcommands or applications.
 - **Custom Types**: Easily parse Enums or Structs from flags using `#[derive(FlagValue)]`.
 - **Flexible Handlers**: Action handlers can be `fn(Context)` or `fn(&mut App, Context)`.
+- **Validation**: Add custom validation logic to flags using `#[flag(validator = ...)]`.
+- **Aliases**: Define multiple names for flags and subcommands using `aliases`.
 
 ## Installation
 
@@ -123,6 +125,40 @@ impl FromStr for Person {
 // Once FromStr is implemented, you can use it in a flag:
 #[derive(Flag)]
 struct PersonFlag(Person);
+```
+
+### Validation
+
+You can ensure flag values meet specific criteria by providing a validator function.
+
+```rust
+fn validate_positive(s: &str) -> Result<(), String> {
+    let val: i32 = s.parse().map_err(|_| "Must be a number")?;
+    if val <= 0 {
+        return Err("Must be positive".to_string());
+    }
+    Ok(())
+}
+
+#[derive(Flag)]
+#[flag(name = "count", validator = validate_positive)]
+struct CountFlag(i32);
+```
+
+### Aliases
+
+You can define alternative names for flags and subcommands.
+
+```rust
+#[derive(Flag)]
+#[flag(name = "list", aliases = "ls, l")]
+struct ListFlag;
+
+#[derive(Subcommand)]
+enum commands {
+    #[subcommand(name = "remove", aliases = "rm, del")]
+    Remove(RemoveCmd),
+}
 ```
 
 ## Advanced Usage: Todo App

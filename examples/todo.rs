@@ -37,7 +37,8 @@ fn validate_format(s: &str) -> Result<(), String> {
     short = 'f',
     default = "simple",
     help = "Output format (simple, detailed)",
-    validator = validate_format
+    validator = validate_format,
+    aliases = "fmt"
 )]
 struct FormatFlag(#[allow(dead_code)] ListFormat);
 
@@ -143,11 +144,11 @@ struct TodoApp {
 
 #[derive(koral::Subcommand)]
 enum TodoCmd {
-    #[subcommand(name = "add")]
+    #[subcommand(name = "add", aliases = "a")]
     Add(AddCmd),
-    #[subcommand(name = "list")]
+    #[subcommand(name = "list", aliases = "ls")]
     List(ListCmd),
-    #[subcommand(name = "done")]
+    #[subcommand(name = "done", aliases = "d")]
     Done(DoneCmd),
 }
 

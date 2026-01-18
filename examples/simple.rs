@@ -1,7 +1,12 @@
 use koral::prelude::*;
 
 #[derive(Flag, Debug)]
-#[flag(name = "verbose", short = 'v', help = "Run with verbose output")]
+#[flag(
+    name = "verbose",
+    short = 'v',
+    help = "Run with verbose output",
+    aliases = "loud"
+)]
 struct VerboseFlag;
 
 fn validate_count(s: &str) -> Result<(), String> {
@@ -14,7 +19,7 @@ fn validate_count(s: &str) -> Result<(), String> {
 }
 
 #[derive(Flag, Debug)]
-#[flag(name = "count", default = "1", help = "Number of times to say hello", validator = validate_count)]
+#[flag(name = "count", default = "1", help = "Number of times to say hello", validator = validate_count, aliases = "cnt, num")]
 struct CountFlag(#[allow(dead_code)] i32);
 
 #[derive(App)]

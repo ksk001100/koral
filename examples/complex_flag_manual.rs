@@ -55,7 +55,8 @@ fn validate_person(s: &str) -> Result<(), String> {
     name = "person",
     short = 'p',
     help = "Person info in 'name,age' format",
-    validator = validate_person
+    validator = validate_person,
+    aliases = "user, human"
 )]
 struct PersonFlag(#[allow(dead_code)] Person);
 

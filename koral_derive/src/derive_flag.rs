@@ -13,6 +13,7 @@ pub fn impl_derive_flag(input: TokenStream) -> TokenStream {
     let mut default_val: Option<String> = None;
     let mut env_var: Option<String> = None;
     let mut validator: Option<syn::Path> = None;
+    let mut aliases: Vec<String> = Vec::new();
 
     // Parse attributes
     for attr in input.attrs {
@@ -58,6 +59,16 @@ pub fn impl_derive_flag(input: TokenStream) -> TokenStream {
                         } else if nv.path.is_ident("validator") {
                             if let Expr::Path(expr_path) = nv.value {
                                 validator = Some(expr_path.path);
+                            }
+                        } else if nv.path.is_ident("aliases") {
+                            if let Expr::Lit(expr_lit) = nv.value {
+                                if let Lit::Str(lit) = expr_lit.lit {
+                                    aliases = lit
+                                        .value()
+                                        .split(',')
+                                        .map(|s| s.trim().to_string())
+                                        .collect();
+                                }
                             }
                         }
                     }
@@ -134,6 +145,10 @@ pub fn impl_derive_flag(input: TokenStream) -> TokenStream {
 
             fn validator() -> Option<fn(&str) -> Result<(), String>> {
                 #validator_quote
+            }
+
+            fn aliases() -> Vec<&'static str> {
+                vec![#(#aliases),*]
             }
         }
     };

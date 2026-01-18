@@ -102,7 +102,7 @@ pub trait App {
         let ctx = {
             let parser = crate::parser::Parser::new(self.flags()).strict(self.is_strict());
             // Skip argv[0] (program name)
-            let args_to_parse = if args.len() > 0 {
+            let args_to_parse = if !args.is_empty() {
                 &args[1..]
             } else {
                 &args[..]
@@ -127,7 +127,10 @@ pub trait App {
             // Check if a known subcommand appears BEFORE help
             // args[0] is prog name, start checking from 1
             let sub_idx = args.iter().enumerate().skip(1).find_map(|(i, arg)| {
-                if subcommands.iter().any(|s| s.name == *arg) {
+                if subcommands
+                    .iter()
+                    .any(|s| s.name == *arg || s.aliases.contains(arg))
+                {
                     Some(i)
                 } else {
                     None
@@ -155,10 +158,10 @@ pub trait App {
         let ctx = {
             let parser = crate::parser::Parser::new(self.flags()).strict(self.is_strict());
             // Skip argv[0] (program name)
-            let args_to_parse = if args.len() > 0 {
-                &args[1..]
-            } else {
+            let args_to_parse = if args.is_empty() {
                 &args[..]
+            } else {
+                &args[1..]
             };
             parser.parse(args_to_parse)?
         };
@@ -203,6 +206,19 @@ pub trait App {
                 name_part.push_str(" <value>");
             }
 
+            if !flag.aliases.is_empty() {
+                name_part.push_str(" (aliases: ");
+                name_part.push_str(
+                    &flag
+                        .aliases
+                        .iter()
+                        .map(|a| format!("--{}", a))
+                        .collect::<Vec<_>>()
+                        .join(", "),
+                );
+                name_part.push(')');
+            }
+
             items.push(HelpItem {
                 name: name_part,
                 desc: flag.help,
@@ -229,7 +245,11 @@ pub trait App {
             for sub in subs {
                 let pad_len = max_sub_width.saturating_sub(sub.name.len()) + padding;
                 let pad = " ".repeat(pad_len);
-                println!("  {}{}{}", sub.name, pad, sub.description);
+                let mut line = format!("  {}{}{}", sub.name, pad, sub.description);
+                if !sub.aliases.is_empty() {
+                    line.push_str(&format!(" (aliases: {})", sub.aliases.join(", ")));
+                }
+                println!("{}", line);
             }
         }
     }

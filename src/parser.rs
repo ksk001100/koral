@@ -45,7 +45,7 @@ impl Parser {
                 let mut matched_flag: Option<&crate::flag::FlagDef> = None;
                 for flag in &self.known_flags {
                     let flag_long = flag.long.as_deref().unwrap_or(&flag.name);
-                    if flag_long == name_part {
+                    if flag_long == name_part || flag.aliases.iter().any(|a| a == name_part) {
                         matched_flag = Some(flag);
                         break;
                     }

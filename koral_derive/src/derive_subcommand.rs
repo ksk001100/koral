@@ -12,7 +12,6 @@ pub fn impl_derive_subcommand(input: TokenStream) -> TokenStream {
     };
 
     let mut match_arms = Vec::new();
-
     let mut cmd_defs = Vec::new();
 
     // For App implementation
@@ -26,8 +25,9 @@ pub fn impl_derive_subcommand(input: TokenStream) -> TokenStream {
     for variant in variants {
         let variant_name = variant.ident;
         let mut cmd_name = variant_name.to_string().to_lowercase();
+        let mut aliases: Vec<String> = Vec::new();
 
-        // Parse attributes for name override
+        // Parse attributes for name override & aliases
         for attr in variant.attrs {
             if attr.path().is_ident("subcommand") {
                 let nested = attr
@@ -37,14 +37,27 @@ pub fn impl_derive_subcommand(input: TokenStream) -> TokenStream {
                     .ok();
                 if let Some(nested_meta) = nested {
                     for meta in nested_meta {
-                        if let Meta::NameValue(nv) = meta {
-                            if nv.path.is_ident("name") {
-                                if let Expr::Lit(expr_lit) = nv.value {
-                                    if let Lit::Str(lit) = expr_lit.lit {
-                                        cmd_name = lit.value();
+                        match meta {
+                            Meta::NameValue(nv) => {
+                                if nv.path.is_ident("name") {
+                                    if let Expr::Lit(expr_lit) = nv.value {
+                                        if let Lit::Str(lit) = expr_lit.lit {
+                                            cmd_name = lit.value();
+                                        }
+                                    }
+                                } else if nv.path.is_ident("aliases") {
+                                    if let Expr::Lit(expr_lit) = nv.value {
+                                        if let Lit::Str(lit) = expr_lit.lit {
+                                            aliases = lit
+                                                .value()
+                                                .split(',')
+                                                .map(|s| s.trim().to_string())
+                                                .collect();
+                                        }
                                     }
                                 }
                             }
+                            _ => {}
                         }
                     }
                 }
@@ -54,7 +67,7 @@ pub fn impl_derive_subcommand(input: TokenStream) -> TokenStream {
         match variant.fields {
             Fields::Unit => {
                 match_arms.push(quote! {
-                    #cmd_name => Ok(Self::#variant_name),
+                    s if s == #cmd_name || [#(#aliases),*].contains(&s) => Ok(Self::#variant_name),
                 });
             }
             Fields::Unnamed(fields) if fields.unnamed.len() == 1 => {
@@ -78,7 +91,7 @@ pub fn impl_derive_subcommand(input: TokenStream) -> TokenStream {
                 // Let's assume `Default` for now as per plan.
 
                 match_arms.push(quote! {
-                    #cmd_name => {
+                     s if s == #cmd_name || [#(#aliases),*].contains(&s) => {
                         // We strictly don't parse the INNER app here because `FromArgs` is just determining WHICH subcommand it is?
                         // Or should `FromArgs` also populate the inner app?
                         // If `RemoteApp` implements `Flag` parsing logic...
@@ -117,7 +130,7 @@ pub fn impl_derive_subcommand(input: TokenStream) -> TokenStream {
         }
 
         cmd_defs.push(quote! {
-            koral::internal::command::CommandDef::new(#cmd_name, ""),
+            koral::internal::command::CommandDef::new(#cmd_name, "").with_aliases(vec![#(#aliases.to_string()),*]),
         });
     }
 
