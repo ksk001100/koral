@@ -33,8 +33,7 @@ cargo add --git https://github.com/ksk001100/koral
 Define your app and flags using macros. You can access the application instance state via `ctx.app`!
 
 ```rust
-use koral::traits::App;
-use koral::{Context, Flag, KoralResult};
+use koral::prelude::*;
 
 #[derive(Flag, Debug)]
 #[flag(name = "verbose", short = 'v', help = "Enable verbose output")]
@@ -44,7 +43,7 @@ struct VerboseFlag;
 #[flag(name = "name", default = "World", help = "Name to greet")]
 struct NameFlag(String);
 
-#[derive(koral::App)]
+#[derive(App)]
 #[app(name = "greet", version = "1.0", action = run)]
 #[app(flags(VerboseFlag, NameFlag))]
 struct GreetApp {

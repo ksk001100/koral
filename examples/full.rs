@@ -1,5 +1,4 @@
-use koral::traits::App;
-use koral::{Context, Flag, KoralResult};
+use koral::prelude::*;
 use std::sync::{Arc, Mutex};
 
 // --- State ---

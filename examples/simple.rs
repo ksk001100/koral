@@ -1,5 +1,4 @@
-use koral::traits::App;
-use koral::{Context, Flag, KoralResult};
+use koral::prelude::*;
 
 #[derive(Flag, Debug)]
 #[flag(name = "verbose", short = 'v', help = "Run with verbose output")]
@@ -9,7 +8,7 @@ struct VerboseFlag;
 #[flag(name = "count", default = "1", help = "Number of times to say hello")]
 struct CountFlag(#[allow(dead_code)] i32);
 
-#[derive(koral::App)]
+#[derive(App)]
 #[app(name = "simple", version = "1.0", action = run)]
 #[app(flags(VerboseFlag, CountFlag))]
 struct SimpleApp {
