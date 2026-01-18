@@ -4,6 +4,9 @@
 
 Koral represents a modern approach to building Command Line Interfaces in Rust, balancing ease of use for simple scripts with robust extensibility for complex applications.
 
+## **Warning**
+**Still in the planning stage.**
+
 ## Features
 
 - **Simple Builder API**: Create functional CLIs with a fluent builder pattern.
