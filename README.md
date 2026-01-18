@@ -1,5 +1,8 @@
 # Koral
 
+> [!WARNING]
+> This is an experimental project.
+
 > A macro-centric CLI framework for Rust emphasizing separation of definition and state.
 
 Koral provides a declarative way to build Command Line Interfaces. By leveraging Rust's type system and procedural macros, it allows you to define your application's structure (flags, subcommands, metadata) separately from its runtime state.
