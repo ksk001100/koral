@@ -1,5 +1,12 @@
 use koral::traits::App;
 use koral::{Context, Flag, KoralResult};
+use std::sync::{Arc, Mutex};
+
+// --- State ---
+
+struct TodoState {
+    tasks: Vec<String>,
+}
 
 // --- Flags ---
 
@@ -27,6 +34,15 @@ fn add_task(ctx: Context) -> KoralResult<()> {
         return Ok(());
     }
     let task = ctx.args.join(" ");
+
+    // Access state (Arc<Mutex<TodoState>>)
+    // We passed &mut Arc<...>, so ctx.state() gives &Arc<...>.
+    let state = ctx
+        .state::<Arc<Mutex<TodoState>>>()
+        .expect("State mismatch");
+    let mut guard = state.lock().unwrap();
+    guard.tasks.push(task.clone());
+
     println!("Added task: '{}'", task);
     Ok(())
 }
@@ -39,11 +55,19 @@ struct ListCmd;
 fn list_tasks(ctx: Context) -> KoralResult<()> {
     let show_all = ctx.get::<AllFlag>().unwrap_or(false);
 
+    // Access state
+    let state = ctx
+        .state::<Arc<Mutex<TodoState>>>()
+        .expect("State mismatch");
+    let guard = state.lock().unwrap();
+
     println!("Tasks:");
-    println!("  [ ] Buy groceries");
-    println!("  [ ] Walk the dog");
+    for (i, task) in guard.tasks.iter().enumerate() {
+        println!("  [{}] {}", i + 1, task);
+    }
+
     if show_all {
-        println!("  [x] Read Koral documentation");
+        println!("  (Showing all tasks - dummy impl)");
     }
     Ok(())
 }
@@ -54,7 +78,20 @@ struct DoneCmd;
 
 fn complete_task(ctx: Context) -> KoralResult<()> {
     if let Some(id_str) = ctx.args.first() {
-        println!("Marked task {} as done.", id_str);
+        if let Ok(id) = id_str.parse::<usize>() {
+            let state = ctx
+                .state::<Arc<Mutex<TodoState>>>()
+                .expect("State mismatch");
+            let mut guard = state.lock().unwrap();
+            if id > 0 && id <= guard.tasks.len() {
+                let removed = guard.tasks.remove(id - 1);
+                println!("Marked task '{}' as done.", removed);
+            } else {
+                println!("Error: Invalid task ID.");
+            }
+        } else {
+            println!("Error: Task ID must be a number.");
+        }
     } else {
         println!("Error: Task ID required.");
     }
@@ -69,6 +106,8 @@ fn complete_task(ctx: Context) -> KoralResult<()> {
 struct TodoApp {
     #[app(subcommand)]
     cmd: TodoCmd,
+
+    state: Arc<Mutex<TodoState>>,
 }
 
 #[derive(koral::Subcommand)]
@@ -88,30 +127,45 @@ impl Default for TodoCmd {
 }
 
 fn run_todo(ctx: Context) -> KoralResult<()> {
+    let app = ctx.app::<TodoApp>().unwrap();
+
     // Check global flags
     if ctx.get::<VerboseFlag>().unwrap_or(false) {
         println!("[DEBUG] Verbose mode enabled");
     }
 
-    // Dispatch subcommand
-    // Note: In a real app you might want to strip the flags consumed by the parent
-    // before passing to subcommand, or Context does it.
-    // Here we pass parsed args.
+    // Clone Arc to local variable, make it mutable so we can take &mut reference
+    let mut state = app.state.clone();
 
-    // Check if there are any args left for subcommand
+    // Dispatch subcommand
+    // ... args check ...
     if ctx.args.is_empty() {
-        // Default behavior (List) or Help?
-        // Let's run List by default as defined in Enum Default, logic needs to trigger it.
-        // But FromArgs expects a subcommand name.
+        // Fallback or usage
+        // Note: For 'list' default, we need logic.
+        // Assuming explicit command for now.
         println!("Usage: todo <add|list|done>");
         return Ok(());
     }
 
+    // Because Context consumes flags, we need to pass what's left in args to subcommand?
+    // Actually Context::args are positional args.
+    // If we have `todo -v add foo`, ctx.args = ["add", "foo"].
+    // We parse "add" to determine subcommand, then pass ["foo"] to subcommand.
+    //
+    // However, `FromArgs` expects the subcommand name at index 0?
+    // `derive_subcommand`: `let sub_name = &args[0];`
+    // Yes.
+
     let cmd = koral::traits::FromArgs::from_args(&ctx.args)?;
+
+    // We need to shift args for the subcommand execution (remove the subcommand name)
+    // `run_with_state` will re-parse.
+    let sub_args = ctx.args[1..].to_vec();
+
     match cmd {
-        TodoCmd::Add(mut c) => c.run(ctx.args[1..].to_vec())?,
-        TodoCmd::List(mut c) => c.run(ctx.args[1..].to_vec())?,
-        TodoCmd::Done(mut c) => c.run(ctx.args[1..].to_vec())?,
+        TodoCmd::Add(mut c) => c.run_with_state(&mut state, sub_args)?,
+        TodoCmd::List(mut c) => c.run_with_state(&mut state, sub_args)?,
+        TodoCmd::Done(mut c) => c.run_with_state(&mut state, sub_args)?,
     }
 
     Ok(())
@@ -120,6 +174,7 @@ fn run_todo(ctx: Context) -> KoralResult<()> {
 fn main() -> KoralResult<()> {
     let mut app = TodoApp {
         cmd: TodoCmd::default(),
+        state: Arc::new(Mutex::new(TodoState { tasks: vec![] })),
     };
 
     app.run(std::env::args().skip(1).collect())

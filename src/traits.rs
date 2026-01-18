@@ -53,10 +53,12 @@ pub trait App {
     /// Execute the application logic.
     fn execute(&mut self, ctx: Context) -> KoralResult<()>;
 
-    /// Run the application with the given arguments.
-    /// This handles common tasks like help and version checks, and argument parsing.
-    fn run(&mut self, args: Vec<String>) -> KoralResult<()> {
-        // 1. Basic help check for root command (naive)
+    /// Run the application with a shared state.
+    fn run_with_state(
+        &mut self,
+        state: &mut dyn std::any::Any,
+        args: Vec<String>,
+    ) -> KoralResult<()> {
         if args.contains(&"--help".to_string()) || args.contains(&"-h".to_string()) {
             self.print_help();
             return Ok(());
@@ -67,76 +69,34 @@ pub trait App {
             return Ok(());
         }
 
-        // 2. Parse arguments
-        // We need to know about subcommands to route correctly.
-        // For now, let's just parse for THIS command.
-
         let ctx = {
             let parser = crate::parser::Parser::new(self.flags());
             parser.parse(&args)?
         };
 
-        // 3. Subcommand routing
-        // Check if the first positional argument matches a subcommand name.
-        if let Some(cmd_name) = ctx.args.first() {
-            for sub in self.subcommands() {
-                if sub.name == cmd_name.as_str() {
-                    // Found a subcommand!
-                    // We need to construct a new args vector for the subcommand
-                    // effectively shifting the args.
-                    // Note: This is a bit simplistic because `ctx.args` has stripped flags out.
-                    // But `ctx.args` contains "positional" args.
-                    // Ideally we should pass the *remainder* of the original unparsed args.
-                    // But since we already parsed everything into `ctx`, we might have consumed flags meant for subcommand?
-                    //
-                    // Actually, usually subcommands are `app subcommand [flags]`.
-                    // So if we see a subcommand, we should stop parsing flags for the parent?
-                    // For now, let's trust that the user didn't mix parent flags after subcommand name if we use strict parsing.
-                    // But wait, `parser` consumes flags.
+        // Inject state
+        let ctx = ctx.with_state(state);
 
-                    // Let's delegate to the subcommand.
-                    // We can't really "re-use" the parent ctx easily if subcommands have different flags.
-                    // So we probably should have checked for subcommand BEFORE full parsing?
-                    // Or `Parser` should support "stop at first non-flag argument"?
+        self.execute(ctx)
+    }
 
-                    // For this refactor, let's keep it simple:
-                    // If we find a subcommand match in the *original* args, dispatch to it.
-                    // But `run` takes `Vec<String>`.
-
-                    // Let's look at `args` again.
-                    // Skip arg[0] which is usually the binary name if called from shell, but `run` usually gets args without binary name?
-                    // `example/simple_app.rs`: .run(std::env::args().skip(1).collect())
-                    // So args[0] is the first argument.
-                }
-            }
+    /// Run the application with the given arguments.
+    /// This handles common tasks like help and version checks, and argument parsing.
+    fn run(&mut self, args: Vec<String>) -> KoralResult<()> {
+        if args.contains(&"--help".to_string()) || args.contains(&"-h".to_string()) {
+            self.print_help();
+            return Ok(());
         }
 
-        // Re-implementing subcommand logic properly requires a bit more sophisticated parsing (like "commands" vs "args").
-        // For now, let's do the parsing and then execute. Subcommand handling might need to be explicit in `execute` OR we enforce a structure.
-        // The implementation plan said: "Update `App` trait: Add `subcommands()`... Update `run` to perform parsing *before* calling `execute`."
-
-        // Let's stick to the plan: `execute` takes `Context`.
-        // If the user wants subcommands, they can register them.
-        // If we want automatic dispatch, we need to do it here.
-
-        if !self.subcommands().is_empty() {
-            if let Some(_first) = args.first() {
-                // Check if 'first' matches a subcommand
-                // We have to iterate mutably if we want to call run on it... but `subcommands()` returns `&dyn App`.
-                // `&dyn App` doesn't allow calling `run` (which takes &mut self).
-                // This is a flaw in the `subcommands()` returning `&dyn App` design if we want generic dispatch.
-                // We need `&mut dyn App`.
-                // But `subcommands` usually returns a list of *owned* or *reference* to apps.
-                // If `self` owns them, we need `subcommands_mut`.
-
-                // For now, let's skip the complicated automatic dispatch implementation in the default `run` method
-                // and focus on getting `execute(ctx)` working first for single apps.
-                // The 'Complex App' example manually handles dispatch, which is fine for now,
-                // but we ideally want to automate it.
-                //
-                // Let's implement basic `execute` call for now.
-            }
+        if args.contains(&"--version".to_string()) {
+            println!("{} version {}", self.name(), self.version());
+            return Ok(());
         }
+
+        let ctx = {
+            let parser = crate::parser::Parser::new(self.flags());
+            parser.parse(&args)?
+        };
 
         self.execute(ctx)
     }

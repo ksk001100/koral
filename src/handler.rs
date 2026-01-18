@@ -1,4 +1,5 @@
 use crate::{Context, KoralResult};
+use std::any::Any;
 
 pub struct WithApp;
 pub struct WithoutApp;
@@ -11,25 +12,21 @@ pub trait Handler<A: ?Sized, Marker> {
 // Handler strictly taking (app, ctx) - Old style or manual style
 impl<A, F> Handler<A, WithApp> for F
 where
-    A: ?Sized,
-    F: Fn(&mut A, Context<A>) -> KoralResult<()>,
+    A: Any,
+    F: Fn(&mut A, Context) -> KoralResult<()>,
 {
     fn call(&self, app: &mut A, ctx: Context) -> KoralResult<()> {
-        // Convert Context<()> to Context<A> but keep app as None (because it's passed separately)
-        let ctx = Context {
-            flags: ctx.flags,
-            args: ctx.args,
-            app: None,
-        };
+        // We do NOT inject app into ctx for WithApp handlers to avoid double mutable borrow.
+        // The handler receives `app` explicitly as the first argument.
         (self)(app, ctx)
     }
 }
 
-// Handler taking only Context<A> (New Preferred Style)
+// Handler taking only Context (New Preferred Style)
 impl<A, F> Handler<A, WithoutApp> for F
 where
-    A: ?Sized,
-    F: Fn(Context<A>) -> KoralResult<()>,
+    A: Any,
+    F: Fn(Context) -> KoralResult<()>,
 {
     fn call(&self, app: &mut A, ctx: Context) -> KoralResult<()> {
         let ctx = ctx.with_app(app);
@@ -37,18 +34,17 @@ where
     }
 }
 
-// Handler taking Context<()> (Legacy Style)
 impl<A, F> Handler<A, IgnoreApp> for F
 where
-    A: ?Sized,
-    F: Fn(Context) -> KoralResult<()>,
+    A: Any,
+    F: Fn() -> KoralResult<()>,
 {
-    fn call(&self, _app: &mut A, ctx: Context) -> KoralResult<()> {
-        (self)(ctx)
+    fn call(&self, _app: &mut A, _ctx: Context) -> KoralResult<()> {
+        (self)()
     }
 }
 
-pub fn call_handler<A: ?Sized, M, H>(handler: H, app: &mut A, ctx: Context) -> KoralResult<()>
+pub fn call_handler<A: Any, M, H>(handler: H, app: &mut A, ctx: Context) -> KoralResult<()>
 where
     H: Handler<A, M>,
 {

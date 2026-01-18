@@ -13,8 +13,6 @@ pub fn impl_derive_app(input: TokenStream) -> TokenStream {
     let mut flag_registrations = Vec::new();
     let mut subcommand_registrations = Vec::new();
 
-    let mut flags_attribute_present = false;
-
     // Parse attributes
     for attr in input.attrs {
         if attr.path().is_ident("app") {
@@ -48,7 +46,6 @@ pub fn impl_derive_app(input: TokenStream) -> TokenStream {
                         }
                         Meta::List(list) => {
                             if list.path.is_ident("flags") {
-                                flags_attribute_present = true;
                                 // flags(Flag1, Flag2)
                                 let types = list
                                     .parse_args_with(
@@ -104,22 +101,14 @@ pub fn impl_derive_app(input: TokenStream) -> TokenStream {
                 }
 
                 if is_subcommand {
-                    // It's a subcommand provider (e.g. strict implementing FromArgs + get_subcommands)
-                    // We assume it implements FromArgs which has get_subcommands()
+                    // It's a subcommand provider
                     subcommand_registrations.push(quote! {
                          let _ = &self.#ident;
                          subs.extend(<#ty as koral::traits::FromArgs>::get_subcommands());
                     });
-                } else if !flags_attribute_present {
-                    // Assume it's a flag ONLY if flags attribute was NOT used at top level.
-                    // If flags() is used, fields are ignored by default (treated as state).
-                    flag_registrations.push(quote! {
-                        let _ = &self.#ident;
-                        flags.push(koral::internal::flag::FlagDef::from_trait::<#ty>());
-                    });
                 } else {
-                    // flags attribute present, so treat field as state (ignore) by default.
-                    // Just silence unused warnings if any.
+                    // Treat as state (ignore) by default.
+                    // Flags must be registered via #[app(flags(...))] at the struct level.
                     flag_registrations.push(quote! {
                          let _ = &self.#ident;
                     });

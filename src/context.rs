@@ -1,9 +1,10 @@
 use crate::traits::FlagValue;
+use std::any::Any;
 use std::collections::HashMap;
 
 /// Result of parsing command line arguments.
 #[derive(Debug, Default)]
-pub struct Context<'a, A: ?Sized = ()> {
+pub struct Context<'a> {
     /// Parsed flag values. Key is the flag name.
     /// Value is the string representation of the value, or empty string for boolean flags.
     pub flags: HashMap<String, Option<String>>,
@@ -11,27 +12,33 @@ pub struct Context<'a, A: ?Sized = ()> {
     /// Positional arguments.
     pub args: Vec<String>,
 
-    /// Reference to the application instance.
-    pub app: Option<&'a mut A>,
+    /// Reference to the current command instance (e.g. AddCmd).
+    pub app: Option<&'a mut dyn Any>,
+
+    /// Reference to the shared state (e.g. TodoApp or TodoState).
+    pub state: Option<&'a mut dyn Any>,
 }
 
 use crate::flag::Flag;
 
-impl<'a, A: ?Sized> Context<'a, A> {
+impl<'a> Context<'a> {
     pub fn new(flags: HashMap<String, Option<String>>, args: Vec<String>) -> Self {
         Self {
             flags,
             args,
             app: None,
+            state: None,
         }
     }
 
-    pub fn with_app<'b, B: ?Sized>(self, app: &'b mut B) -> Context<'b, B> {
-        Context {
-            flags: self.flags,
-            args: self.args,
-            app: Some(app),
-        }
+    pub fn with_app(mut self, app: &'a mut dyn Any) -> Self {
+        self.app = Some(app);
+        self
+    }
+
+    pub fn with_state(mut self, state: &'a mut dyn Any) -> Self {
+        self.state = Some(state);
+        self
     }
 
     /// Check if a flag was present.
@@ -77,5 +84,44 @@ impl<'a, A: ?Sized> Context<'a, A> {
     // Deprecated or alias helper
     pub fn has_flag(&self, name: &str) -> bool {
         self.is_present(name)
+    }
+
+    /// Access the command instance as a specific type.
+    pub fn app<T: Any>(&self) -> Option<&T> {
+        // self.app is Option<&mut dyn Any>
+        // We need to reborrow it as &Any to downcast_ref
+        // self.app.as_ref().map(|a| a.downcast_ref::<T>()).flatten() // nested options
+        if let Some(a) = &self.app {
+            a.downcast_ref::<T>()
+        } else {
+            None
+        }
+    }
+
+    /// Access the command instance mutably.
+    pub fn app_mut<T: Any>(&mut self) -> Option<&mut T> {
+        if let Some(a) = &mut self.app {
+            a.downcast_mut::<T>()
+        } else {
+            None
+        }
+    }
+
+    /// Access the shared state as a specific type.
+    pub fn state<T: Any>(&self) -> Option<&T> {
+        if let Some(s) = &self.state {
+            s.downcast_ref::<T>()
+        } else {
+            None
+        }
+    }
+
+    /// Access the shared state mutably.
+    pub fn state_mut<T: Any>(&mut self) -> Option<&mut T> {
+        if let Some(s) = &mut self.state {
+            s.downcast_mut::<T>()
+        } else {
+            None
+        }
     }
 }

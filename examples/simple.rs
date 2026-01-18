@@ -16,9 +16,9 @@ struct SimpleApp {
     call_count: i32,
 }
 
-fn run(mut ctx: Context<SimpleApp>) -> KoralResult<()> {
+fn run(mut ctx: Context) -> KoralResult<()> {
     // Access application state via ctx.app
-    if let Some(app) = &mut ctx.app {
+    if let Some(app) = ctx.app_mut::<SimpleApp>() {
         app.call_count += 1;
         println!("SimpleApp run count: {}", app.call_count);
     }
