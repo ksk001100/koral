@@ -4,13 +4,17 @@ use crate::flag::{Flag, FlagDef};
 use crate::traits::App as AppTrait;
 
 /// The builder struct for defining an application.
+/// Type alias for the application action handler
+pub type ActionFn = Box<dyn Fn(Context) -> KoralResult<()>>;
+
+/// The builder struct for defining an application.
 pub struct App {
     name: String,
     version: String,
     description: String,
     flags: Vec<FlagDef>,
     subcommands: Vec<Box<dyn AppTrait>>,
-    action: Option<Box<dyn Fn(Context) -> KoralResult<()>>>,
+    action: Option<ActionFn>,
 }
 
 impl App {
