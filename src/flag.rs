@@ -1,110 +1,67 @@
-use crate::traits::Flag as FlagTrait;
+use crate::traits::FlagValue;
 
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Flag {
-    name: String,
-    alias: Vec<String>,
-    kind: FlagKind,
+/// A command line flag.
+///
+/// Flags are used to parse named arguments (e.g. `--verbose`, `--count 3`).
+/// They are generic over the type `T` which implements `FlagValue`.
+#[derive(Clone, Debug)]
+pub struct Flag<T: FlagValue> {
+    pub name: String,
+    pub aliases: Vec<String>,
+    pub description: String,
+    pub default_value: Option<T>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum FlagKind {
-    Boolean,
-    Value,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum FlagValue {
-    Boolean(bool),
-    Value(String),
-}
-
-impl Flag {
-    pub fn new<T: Into<String>>(name: T, kind: FlagKind) -> Self {
-        Flag {
+impl<T: FlagValue> Flag<T> {
+    /// Create a new flag with the given name.
+    ///
+    /// The name should be specified without the leading dashes (e.g. "verbose" for `--verbose`).
+    pub fn new(name: impl Into<String>) -> Self {
+        Self {
             name: name.into(),
-            alias: vec![],
-            kind,
+            aliases: Vec::new(),
+            description: String::new(),
+            default_value: None,
         }
     }
 
+    /// Add an alias for the flag.
+    ///
+    /// Aliases are usually short versions (e.g. "v" for `-v`).
     pub fn alias(mut self, alias: impl Into<String>) -> Self {
-        self.alias.push(alias.into());
+        self.aliases.push(alias.into());
         self
     }
+
+    /// Set the description of the flag for help messages.
+    pub fn description(mut self, description: impl Into<String>) -> Self {
+        self.description = description.into();
+        self
+    }
+
+    /// Set a default value for the flag if it is not present in the arguments.
+    pub fn default_value(mut self, value: T) -> Self {
+        self.default_value = Some(value);
+        self
+    }
+
 }
 
-impl FlagTrait for Flag {
-    type Kind = FlagKind;
-    type Value = FlagValue;
-
-    fn name(self) -> String {
-        self.name.clone()
+impl<T: FlagValue> crate::traits::Flag for Flag<T> {
+    fn name(&self) -> &str {
+        &self.name
     }
 
-    fn kind(self) -> Self::Kind {
-        self.kind.clone()
+    fn description(&self) -> &str {
+        &self.description
     }
 
-    fn alias(self) -> Vec<String> {
-        self.alias.clone()
+    fn aliases(&self) -> Vec<&str> {
+        self.aliases.iter().map(|s| s.as_str()).collect()
     }
 
-    fn option_index(&self, v: &[String]) -> Option<usize> {
-        v.iter().position(|r| {
-            r == &format!("--{}", &self.name) || self.alias.iter().any(|a| r == &format!("-{}", a))
-        })
-    }
-
-    fn value(&self, args: &[String]) -> Option<Self::Value> {
-        match self.kind {
-            FlagKind::Boolean => {
-                if self.option_index(args).is_some() {
-                    return Some(FlagValue::Boolean(true));
-                }
-                None
-            }
-            FlagKind::Value => {
-                if let Some(index) = self.option_index(args) {
-                    if index + 1 < args.len() && !args[index + 1].starts_with('-') {
-                        return Some(FlagValue::Value(args[index + 1].clone()));
-                    }
-                }
-                None
-            }
-        }
+    fn takes_value(&self) -> bool {
+        T::takes_value()
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_flag() {
-        let flag = Flag::new("flag", FlagKind::Value);
-        assert_eq!(flag.clone().name(), "flag");
-        assert_eq!(flag.clone().kind(), FlagKind::Value);
-    }
-
-    #[test]
-    fn test_flag_value() {
-        let flag = Flag::new("flag", FlagKind::Value);
-        let args = vec![
-            "test".to_string(),
-            "--flag".to_string(),
-            "value".to_string(),
-        ];
-        assert_eq!(
-            flag.value(&args),
-            Some(FlagValue::Value("value".to_string()))
-        );
-    }
-
-    #[test]
-    fn test_flag_boolean() {
-        let flag = Flag::new("flag", FlagKind::Boolean);
-        let args = vec!["test".to_string(), "--flag".to_string()];
-        assert_eq!(flag.value(&args), Some(FlagValue::Boolean(true)));
-    }
-}

@@ -1,10 +1,12 @@
-pub mod action;
 pub mod app;
 pub mod context;
+pub mod error;
 pub mod flag;
+pub mod parser;
 pub mod traits;
 
-pub use action::Action;
 pub use app::App;
 pub use context::Context;
-pub use flag::{Flag, FlagKind, FlagValue};
+pub use error::{KoralError, KoralResult};
+pub use traits::FlagValue;
+pub use flag::Flag;

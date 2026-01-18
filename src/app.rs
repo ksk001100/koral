@@ -1,145 +1,140 @@
-use crate::{action::Action, context::Context, flag::Flag, traits};
+use crate::error::KoralResult;
+use crate::traits::{App as AppTrait, Flag as FlagTrait};
+use crate::flag::Flag;
+use crate::traits::FlagValue;
+use crate::context::Context;
 
+/// The default implementation of a CLI application.
+///
+/// This struct allows for constructing a CLI using the builder pattern.
+/// It implements `koral::traits::App` so it benefits from the standard lifecycle.
 pub struct App {
     name: String,
-    apps: Vec<Box<dyn traits::App>>,
-    action: Action,
-    flags: Vec<Flag>,
+    version: String,
+    description: String,
+    flags: Vec<Box<dyn FlagTrait>>,
+    subcommands: Vec<Box<dyn AppTrait>>,
+    action: Option<Box<dyn Fn(Context) -> KoralResult<()>>>,
 }
 
 impl App {
-    pub fn new<T: Into<String>>(name: T) -> Self {
-        App {
+    /// Create a new application with the given name.
+    pub fn new(name: impl Into<String>) -> Self {
+        Self {
             name: name.into(),
-            apps: vec![],
-            flags: vec![],
-            action: |_| Ok(()),
+            version: "0.0.0".to_string(),
+            description: String::new(),
+            flags: Vec::new(),
+            subcommands: Vec::new(),
+            action: None,
         }
     }
 
-    pub fn action(mut self, action: Action) -> Self {
-        self.action = action;
+    /// Set the version of the application.
+    pub fn version(mut self, version: impl Into<String>) -> Self {
+        self.version = version.into();
         self
     }
 
-    pub fn app(mut self, app: impl traits::App + 'static) -> Self {
-        self.apps.push(Box::new(app));
+    /// Set the description of the application.
+    pub fn description(mut self, description: impl Into<String>) -> Self {
+        self.description = description.into();
         self
     }
 
-    pub fn flag(mut self, flag: Flag) -> Self {
-        self.flags.push(flag);
+    /// Register a flag.
+    pub fn flag<T: FlagValue>(mut self, flag: Flag<T>) -> Self {
+        self.flags.push(Box::new(flag));
         self
     }
 
-    pub fn run(&self, args: Vec<String>) -> Result<(), Box<dyn std::error::Error>> {
-        match args.get(1) {
-            Some(app_name) => {
-                let app = self.apps.iter().find(|app| app.name() == *app_name);
-                match app {
-                    Some(app) => app.run(args[1..].to_vec()),
-                    None => {
-                        if Self::is_help(args.clone()) {
-                            self.help();
-                            return Ok(());
-                        }
-                        let ctx = Context::new(args, self.flags.clone());
-                        (self.action)(ctx)
-                    }
-                }
-            }
-            None => {
-                let ctx = Context::new(args, self.flags.clone());
-                (self.action)(ctx)
-            }
-        }
+    /// Register a subcommand.
+    pub fn subcommand<A: AppTrait + 'static>(mut self, sub: A) -> Self {
+        self.subcommands.push(Box::new(sub));
+        self
     }
 
-    pub fn help(&self) {
-        use crate::traits::Flag;
-
-        println!("App Name: {}", self.name);
-        if self.flags.is_empty() {
-            println!("Flags:");
-            for flag in &self.flags {
-                println!("\t--{} {:?}", flag.clone().name(), flag.clone().kind());
-            }
-        }
-
-        if self.apps.is_empty() {
-            println!("Commands:");
-            for app in &self.apps {
-                println!("\t{}", app.name());
-                for flag in app.flags() {
-                    println!("\t\t--{} {:?}", flag.clone().name(), flag.clone().kind());
-                }
-            }
-        }
+    /// Set the action to be executed when the application runs.
+    ///
+    /// The action receives the `Context` containing parsed flags and arguments.
+    pub fn action<F>(mut self, action: F) -> Self 
+    where F: Fn(Context) -> KoralResult<()> + 'static 
+    {
+        self.action = Some(Box::new(action));
+        self
     }
 
-    fn is_help(args: Vec<String>) -> bool {
-        args.contains(&"--help".to_string()) || args.contains(&"-h".to_string())
+    /// Run the application with the given arguments.
+    pub fn run(&mut self, args: Vec<String>) -> KoralResult<()> {
+        crate::traits::App::run(self, args)
     }
 }
 
-impl traits::App for App {
-    fn name(&self) -> String {
-        self.name.clone()
+impl AppTrait for App {
+    fn name(&self) -> &str {
+        &self.name
     }
 
-    fn action(&self, ctx: Context) -> Result<(), Box<dyn std::error::Error>> {
-        (self.action)(ctx)
+    fn version(&self) -> &str {
+        &self.version
     }
 
-    fn run(&self, args: Vec<String>) -> Result<(), Box<dyn std::error::Error>> {
-        self.run(args)
+    fn description(&self) -> &str {
+        &self.description
     }
 
-    fn flags(&self) -> Vec<Flag> {
-        self.flags.clone()
+    fn flags(&self) -> Vec<&dyn FlagTrait> {
+        self.flags.iter().map(|b| b.as_ref()).collect()
+    }
+
+    fn subcommands(&self) -> Vec<&dyn AppTrait> {
+        self.subcommands.iter().map(|b| b.as_ref()).collect()
+    }
+
+    fn execute(&mut self, ctx: Context) -> KoralResult<()> {
+        if let Some(action) = &self.action {
+            action(ctx)
+        } else {
+            Ok(())
+        }
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::flag::FlagKind;
 
     #[test]
-    fn test_app() {
-        let app = App::new("test")
-            .flag(Flag::new("flag", FlagKind::Value))
-            .action(|ctx| {
-                let flag = ctx.value_flag("flag").unwrap();
-                assert_eq!(flag, "value");
+    fn test_app_builder() {
+        let app = App::new("test-app")
+            .version("1.2.3")
+            .description("A test app");
+        
+        assert_eq!(app.name(), "test-app");
+        assert_eq!(app.version(), "1.2.3");
+        assert_eq!(app.description(), "A test app");
+    }
+
+    #[test]
+    fn test_app_execution() {
+        use std::sync::{Arc, Mutex};
+        
+        let executed = Arc::new(Mutex::new(false));
+        let executed_clone = executed.clone();
+
+        let mut app = App::new("test")
+            .flag(Flag::<bool>::new("verbose"))
+            .action(move |ctx| {
+                let mut guard = executed_clone.lock().unwrap();
+                *guard = true;
+                // Verify context was passed
+                assert!(ctx.has_flag("verbose"));
                 Ok(())
             });
 
-        let args = vec![
-            "test".to_string(),
-            "--flag".to_string(),
-            "value".to_string(),
-        ];
-        app.run(args).unwrap();
-    }
-
-    #[test]
-    fn test_app_help() {
-        let app = App::new("test")
-            .flag(Flag::new("flag", FlagKind::Value))
-            .action(|_| Ok(()));
-
-        let args = vec!["test".to_string(), "--help".to_string()];
-        app.run(args).unwrap();
-    }
-
-    #[test]
-    fn test_app_app() {
-        let app = App::new("test")
-            .app(App::new("sub").action(|_| Ok(())))
-            .action(|_| Ok(()));
-
-        let args = vec!["test".to_string(), "sub".to_string()];
-        app.run(args).unwrap();
+        app.run(vec!["--verbose".to_string()]).unwrap();
+        
+        assert!(*executed.lock().unwrap());
     }
 }
+
