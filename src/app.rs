@@ -2,7 +2,6 @@ use crate::context::Context;
 use crate::error::KoralResult;
 use crate::flag::{Flag, FlagDef};
 use crate::traits::App as AppTrait;
-// Import FlagValue to inspect takes_value
 
 pub struct App {
     name: String,
@@ -90,8 +89,13 @@ impl AppTrait for App {
         self.flags.clone()
     }
 
-    fn subcommands(&self) -> Vec<&dyn AppTrait> {
-        self.subcommands.iter().map(|b| b.as_ref()).collect()
+    fn subcommands(&self) -> Vec<crate::command::CommandDef> {
+        // This manual implementation of App struct is becoming tricky because it holds Box<dyn AppTrait>.
+        // It needs to convert those into CommandDefs.
+        self.subcommands
+            .iter()
+            .map(|b| crate::command::CommandDef::new(b.name(), b.description()))
+            .collect()
     }
 
     fn execute(&mut self, ctx: Context) -> KoralResult<()> {

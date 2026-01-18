@@ -4,6 +4,7 @@ use std::fmt;
 pub enum KoralError {
     FlagValueParseError(String),
     MissingArgument(String),
+    InvalidFlag(String),
     UnknownFlag(String),
     Validation(String),
 }
@@ -13,6 +14,7 @@ impl fmt::Display for KoralError {
         match self {
             KoralError::FlagValueParseError(msg) => write!(f, "Flag parse error: {}", msg),
             KoralError::MissingArgument(msg) => write!(f, "Missing argument: {}", msg),
+            KoralError::InvalidFlag(msg) => write!(f, "Invalid flag/command: {}", msg),
             KoralError::UnknownFlag(msg) => write!(f, "Unknown flag: {}", msg),
             KoralError::Validation(msg) => write!(f, "Validation error: {}", msg),
         }

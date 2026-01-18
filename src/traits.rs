@@ -17,6 +17,14 @@ where
 {
 }
 
+/// Trait for types that can be parsed from a list of arguments (e.g. subcommands).
+pub trait FromArgs: Sized {
+    fn from_args(args: &[String]) -> KoralResult<Self>;
+    fn get_subcommands() -> Vec<crate::command::CommandDef> {
+        vec![]
+    }
+}
+
 /// The core trait for a CLI application or sub-command.
 pub trait App {
     /// The name of the application or command.
@@ -37,8 +45,8 @@ pub trait App {
         vec![]
     }
 
-    /// Returns a list of subcommands.
-    fn subcommands(&self) -> Vec<&dyn App> {
+    /// Returns a list of subcommands for help generation.
+    fn subcommands(&self) -> Vec<crate::command::CommandDef> {
         vec![]
     }
 
@@ -72,7 +80,7 @@ pub trait App {
         // Check if the first positional argument matches a subcommand name.
         if let Some(cmd_name) = ctx.args.first() {
             for sub in self.subcommands() {
-                if sub.name() == cmd_name {
+                if sub.name == cmd_name.as_str() {
                     // Found a subcommand!
                     // We need to construct a new args vector for the subcommand
                     // effectively shifting the args.
@@ -166,7 +174,7 @@ pub trait App {
         if !subs.is_empty() {
             println!("\nCommands:");
             for sub in subs {
-                println!("  {}  {}", sub.name(), sub.description());
+                println!("  {}  {}", sub.name, sub.description);
             }
         }
     }
