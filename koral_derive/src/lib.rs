@@ -2,6 +2,7 @@ use proc_macro::TokenStream;
 
 mod derive_app;
 mod derive_flag;
+mod derive_flag_value;
 mod derive_subcommand;
 
 #[proc_macro_derive(Flag, attributes(flag))]
@@ -17,4 +18,9 @@ pub fn derive_subcommand(input: TokenStream) -> TokenStream {
 #[proc_macro_derive(App, attributes(app))]
 pub fn derive_app(input: TokenStream) -> TokenStream {
     derive_app::impl_derive_app(input)
+}
+
+#[proc_macro_derive(FlagValue)]
+pub fn derive_flag_value(input: TokenStream) -> TokenStream {
+    derive_flag_value::impl_derive_flag_value(input)
 }

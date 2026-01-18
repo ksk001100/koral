@@ -100,7 +100,7 @@ pub mod prelude {
     pub use crate::error::{KoralError, KoralResult};
     pub use crate::flag::{Flag, FlagDef};
     pub use crate::traits::{App as AppTrait, FlagValue, FromArgs};
-    pub use koral_derive::{App, Flag, Subcommand};
+    pub use koral_derive::{App, Flag, FlagValue, Subcommand};
 }
 
 pub use app::App;
@@ -108,5 +108,5 @@ pub use command::CommandDef;
 pub use context::Context;
 pub use error::{KoralError, KoralResult};
 pub use flag::{Flag, FlagDef};
-pub use koral_derive::{App, Flag, Subcommand};
+pub use koral_derive::{App, Flag, FlagValue, Subcommand};
 pub use traits::{FlagValue, FromArgs};

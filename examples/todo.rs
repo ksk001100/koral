@@ -14,12 +14,24 @@ struct TodoState {
 struct VerboseFlag;
 
 #[derive(Flag, Debug, Default)]
-#[flag(
-    name = "all",
-    short = 'a',
-    help = "Show all tasks including completed ones"
-)]
+#[flag(help = "Show all tasks including completed ones")]
 struct AllFlag;
+
+#[derive(FlagValue, Clone, Debug, PartialEq, Default)]
+enum ListFormat {
+    #[default]
+    Simple,
+    Detailed,
+}
+
+#[derive(Flag, Debug, Default)]
+#[flag(
+    name = "format",
+    short = 'f',
+    default = "simple",
+    help = "Output format (simple, detailed)"
+)]
+struct FormatFlag(#[allow(dead_code)] ListFormat);
 
 // --- Subcommands ---
 
@@ -51,11 +63,12 @@ fn add_task(ctx: Context) -> KoralResult<()> {
 
 #[derive(Default, koral::App)]
 #[app(name = "list", action = list_tasks)]
-#[app(flags(AllFlag))]
+#[app(flags(AllFlag, FormatFlag))]
 struct ListCmd;
 
 fn list_tasks(ctx: Context) -> KoralResult<()> {
     let show_all = ctx.get::<AllFlag>().unwrap_or(false);
+    let format = ctx.get::<FormatFlag>().expect("Default value");
 
     // Access state
     let state = ctx
@@ -66,9 +79,12 @@ fn list_tasks(ctx: Context) -> KoralResult<()> {
         .lock()
         .map_err(|_| KoralError::Validation("Lock poisoned".to_string()))?;
 
-    println!("Tasks:");
+    println!("Tasks (Format: {:?}):", format);
     for (i, task) in guard.tasks.iter().enumerate() {
-        println!("  [{}] {}", i + 1, task);
+        match format {
+            ListFormat::Simple => println!("  - {}", task),
+            ListFormat::Detailed => println!("  [{}] {}", i + 1, task),
+        }
     }
 
     if show_all {
