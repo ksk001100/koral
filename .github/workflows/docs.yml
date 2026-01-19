@@ -27,6 +27,8 @@ jobs:
             chmod -c -R +rX "target/doc" | while read line; do
                 echo "::warning title=Invalid file permissions automatically fixed::$line"
             done
+      - name: Create index.html redirect
+        run: echo '<meta http-equiv="refresh" content="0;url=koral/index.html">' > target/doc/index.html
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
