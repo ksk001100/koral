@@ -185,7 +185,7 @@ generate_to(&app, Shell::Bash, &mut std::io::stdout())?;
 
 | Example | Description | Command |
 |---------|-------------|---------|
-| `hello` | Minimal "Hello World" example | `cargo run --example hello` |
-| `todo` | Full application with subcommands and state | `cargo run --example todo` |
-| `comprehensive` | Features showcase (DI, Middleware, etc.) | `cargo run --example comprehensive` |
-| `complex_flag_manual` | Manual implementation of types for Flags | `cargo run --example complex_flag_manual` |
+| `hello-world` | Minimal "Hello World" example | `cargo run -p hello-world` |
+| `todo-app` | Full application with subcommands and state | `cargo run -p todo-app` |
+| `sys-monitor` | Features showcase (DI, Middleware, etc.) | `cargo run -p sys-monitor` |
+| `kv-store` | Key-Value store with persistence | `cargo run -p kv-store` |
