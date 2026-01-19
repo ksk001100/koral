@@ -120,19 +120,38 @@ fn main() {
 }
 ```
 
-### Required & Strict Mode
+### Flag Configuration
 
-- **Required Flags**: Add `required = true` to `#[flag(...)]`.
+Koral supports various attributes to customize flag behavior:
+
+- **required**: Marks the flag as mandatory (`required = true`).
+- **env**: Sets an environment variable to read from if the flag is missing (`env = "MY_ENV_VAR"`).
+- **value_name**: Customizes the placeholder name in help/completion (e.g. `value_name = "FILE"` -> `--config <FILE>`).
+- **help_heading**: Groups the flag under a custom heading in the help message.
 - **Strict Mode**: Add `#[app(strict)]` to treat unknown flags as errors instead of positional args.
 
 ```rust
 #[derive(Flag)]
-#[flag(name = "token", required = true)]
+#[flag(
+    name = "token", 
+    required = true, 
+    env = "API_TOKEN", 
+    help_heading = "Authentication"
+)]
 struct TokenFlag(String);
+
+#[derive(Flag)]
+#[flag(
+    name = "output", 
+    short = 'o', 
+    value_name = "PATH",
+    help = "Output file path"
+)]
+struct OutputFlag(String);
 
 #[derive(App)]
 #[app(name = "secure-app", strict)]
-#[app(flags(TokenFlag))]
+#[app(flags(TokenFlag, OutputFlag))]
 struct SecureApp;
 ```
 

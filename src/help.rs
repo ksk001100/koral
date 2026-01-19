@@ -10,27 +10,27 @@ pub fn generate_help<T: App + ?Sized>(app: &T) -> String {
         out.push_str(&format!("{}\n", desc));
     }
 
-    out.push_str("\nOptions:\n");
-
     struct HelpItem {
         name: String,
         desc: String,
     }
 
-    let mut items = Vec::new();
+    use std::collections::BTreeMap;
+    let mut groups: BTreeMap<Option<String>, Vec<HelpItem>> = BTreeMap::new();
 
-    // Built-in flags
-    items.push(HelpItem {
+    // Built-in flags (Default group)
+    let default_group = groups.entry(None).or_default();
+    default_group.push(HelpItem {
         name: "--version".to_string(),
         desc: "Show version information".to_string(),
     });
-    items.push(HelpItem {
+    default_group.push(HelpItem {
         name: "--help, -h".to_string(),
         desc: "Show help information".to_string(),
     });
 
     let mut flags = app.flags();
-    // Sort flags by name for consistent output
+    // Sort flags by name
     flags.sort_by(|a, b| a.name.cmp(&b.name));
 
     for flag in flags {
@@ -40,7 +40,8 @@ pub fn generate_help<T: App + ?Sized>(app: &T) -> String {
         }
 
         if flag.takes_value {
-            name_part.push_str(" <value>");
+            let vname = flag.value_name.as_deref().unwrap_or("value");
+            name_part.push_str(&format!(" <{}>", vname));
         }
 
         if !flag.aliases.is_empty() {
@@ -56,20 +57,46 @@ pub fn generate_help<T: App + ?Sized>(app: &T) -> String {
             name_part.push(')');
         }
 
-        items.push(HelpItem {
-            name: name_part,
-            desc: flag.help.clone(),
-        });
+        groups
+            .entry(flag.help_heading.clone())
+            .or_default()
+            .push(HelpItem {
+                name: name_part,
+                desc: flag.help.clone(),
+            });
     }
 
-    // Calculate max width for alignment
-    let max_width = items.iter().map(|i| i.name.len()).max().unwrap_or(0);
+    // Calculate max width across ALL items for consistent alignment?
+    // Or per section? Usually per section is fine or global.
+    // Let's do global alignment for neatness.
+    let max_width = groups
+        .values()
+        .flat_map(|items| items.iter().map(|i| i.name.len()))
+        .max()
+        .unwrap_or(0);
     let padding = 2;
 
-    for item in items {
-        let pad_len = max_width.saturating_sub(item.name.len()) + padding;
-        let pad = " ".repeat(pad_len);
-        out.push_str(&format!("  {}{}{}\n", item.name, pad, item.desc));
+    // Output groups
+    // 1. None (Options) first
+    if let Some(items) = groups.get(&None) {
+        out.push_str("\nOptions:\n");
+        for item in items {
+            let pad_len = max_width.saturating_sub(item.name.len()) + padding;
+            let pad = " ".repeat(pad_len);
+            out.push_str(&format!("  {}{}{}\n", item.name, pad, item.desc));
+        }
+    }
+
+    // 2. Named groups
+    for (heading, items) in &groups {
+        if let Some(h) = heading {
+            out.push_str(&format!("\n{}:\n", h));
+            for item in items {
+                let pad_len = max_width.saturating_sub(item.name.len()) + padding;
+                let pad = " ".repeat(pad_len);
+                out.push_str(&format!("  {}{}{}\n", item.name, pad, item.desc));
+            }
+        }
     }
 
     let mut subs = app.subcommands();

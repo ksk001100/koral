@@ -15,6 +15,8 @@ pub fn impl_derive_flag(input: TokenStream) -> TokenStream {
     let mut validator: Option<syn::Path> = None;
     let mut aliases: Vec<String> = Vec::new();
     let mut required = false;
+    let mut value_name: Option<String> = None;
+    let mut help_heading: Option<String> = None;
 
     // Parse attributes
     for attr in input.attrs {
@@ -77,6 +79,18 @@ pub fn impl_derive_flag(input: TokenStream) -> TokenStream {
                                     required = lit.value;
                                 }
                             }
+                        } else if nv.path.is_ident("value_name") || nv.path.is_ident("value") {
+                            if let Expr::Lit(expr_lit) = nv.value {
+                                if let Lit::Str(lit) = expr_lit.lit {
+                                    value_name = Some(lit.value());
+                                }
+                            }
+                        } else if nv.path.is_ident("help_heading") || nv.path.is_ident("heading") {
+                            if let Expr::Lit(expr_lit) = nv.value {
+                                if let Lit::Str(lit) = expr_lit.lit {
+                                    help_heading = Some(lit.value());
+                                }
+                            }
                         }
                     }
                     _ => {}
@@ -118,6 +132,16 @@ pub fn impl_derive_flag(input: TokenStream) -> TokenStream {
     };
 
     let validator_quote = match validator {
+        Some(v) => quote! { Some(#v) },
+        None => quote! { None },
+    };
+
+    let value_name_quote = match value_name {
+        Some(v) => quote! { Some(#v) },
+        None => quote! { None },
+    };
+
+    let help_heading_quote = match help_heading {
         Some(v) => quote! { Some(#v) },
         None => quote! { None },
     };
@@ -169,6 +193,14 @@ pub fn impl_derive_flag(input: TokenStream) -> TokenStream {
 
             fn required() -> bool {
                 #required
+            }
+
+            fn value_name() -> Option<&'static str> {
+                #value_name_quote
+            }
+
+            fn help_heading() -> Option<&'static str> {
+                #help_heading_quote
             }
         }
     };

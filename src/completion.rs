@@ -79,10 +79,16 @@ fn generate_zsh<W: Write>(app: &impl App, buf: &mut W) -> io::Result<()> {
     // Flags
     for flag in app.flags() {
         let help = escape_help(&flag.help);
+        let val_hint = if flag.takes_value {
+            format!(":{}", flag.value_name.as_deref().unwrap_or("value"))
+        } else {
+            String::new()
+        };
+
         if let Some(s) = flag.short {
-            writeln!(buf, "        '-{}[{}]'", s, help)?;
+            writeln!(buf, "        '-{}[{}]{}'", s, help, val_hint)?;
         }
-        writeln!(buf, "        '--{}[{}]'", flag.name, help)?;
+        writeln!(buf, "        '--{}[{}]{}'", flag.name, help, val_hint)?;
     }
 
     // Subcommands
@@ -117,6 +123,12 @@ fn generate_fish<W: Write>(app: &impl App, buf: &mut W) -> io::Result<()> {
         }
         line.push_str(&format!(" -l {}", flag.name));
         line.push_str(&format!(" -d '{}'", help));
+
+        if flag.takes_value {
+            line.push_str(" -r"); // Require argument
+                                  // If we had a way to specify value completion (e.g. files), we would add it here.
+        }
+
         writeln!(buf, "{}", line)?;
     }
 

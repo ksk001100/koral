@@ -280,6 +280,8 @@ mod tests {
             env: None,
             validator: None,
             aliases: vec![],
+            value_name: None,
+            help_heading: None,
         };
         let opt_flag = FlagDef {
             name: "opt".to_string(),
@@ -292,6 +294,8 @@ mod tests {
             env: None,
             validator: None,
             aliases: vec![],
+            value_name: None,
+            help_heading: None,
         };
 
         let flags = vec![req_flag, opt_flag];

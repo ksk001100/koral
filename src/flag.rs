@@ -26,6 +26,10 @@ pub struct FlagDef {
     pub aliases: Vec<String>,
     /// Whether the flag is required
     pub required: bool,
+    /// Value name for help/completion (e.g. "FILE")
+    pub value_name: Option<String>,
+    /// Help section heading
+    pub help_heading: Option<String>,
 }
 
 impl FlagDef {
@@ -42,6 +46,8 @@ impl FlagDef {
             validator: F::validator(),
             aliases: F::aliases().into_iter().map(|s| s.to_string()).collect(),
             required: F::required(),
+            value_name: F::value_name().map(|s| s.to_string()),
+            help_heading: F::help_heading().map(|s| s.to_string()),
         }
     }
 }
@@ -89,7 +95,6 @@ where
     }
 
     /// Validator function.
-    /// Validator function.
     fn validator() -> Option<Validator> {
         None
     }
@@ -102,5 +107,15 @@ where
     /// Whether the flag is required.
     fn required() -> bool {
         false
+    }
+
+    /// Value name for help/completion hints.
+    fn value_name() -> Option<&'static str> {
+        None
+    }
+
+    /// Help section heading.
+    fn help_heading() -> Option<&'static str> {
+        None
     }
 }
