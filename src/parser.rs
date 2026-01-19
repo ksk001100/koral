@@ -261,3 +261,55 @@ pub fn validate_required_flags(
     }
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::flag::FlagDef;
+
+    #[test]
+    fn test_validate_required_flags() {
+        let req_flag = FlagDef {
+            name: "req".to_string(),
+            required: true,
+            short: None,
+            long: None,
+            help: "".to_string(),
+            takes_value: true,
+            default_value: None,
+            env: None,
+            validator: None,
+            aliases: vec![],
+        };
+        let opt_flag = FlagDef {
+            name: "opt".to_string(),
+            required: false,
+            short: None,
+            long: None,
+            help: "".to_string(),
+            takes_value: true,
+            default_value: None,
+            env: None,
+            validator: None,
+            aliases: vec![],
+        };
+
+        let flags = vec![req_flag, opt_flag];
+
+        // Case 1: All present
+        let mut map = HashMap::new();
+        map.insert("req".to_string(), Some("val".to_string()));
+        assert!(validate_required_flags(&flags, &map).is_ok());
+
+        // Case 2: Required missing
+        let mut map2 = HashMap::new();
+        map2.insert("opt".to_string(), Some("val".to_string()));
+        let err = validate_required_flags(&flags, &map2);
+        assert!(matches!(err, Err(KoralError::MissingArgument(_))));
+
+        // Case 3: Required present, Optional missing (OK)
+        let mut map3 = HashMap::new();
+        map3.insert("req".to_string(), Some("val".to_string()));
+        assert!(validate_required_flags(&flags, &map3).is_ok());
+    }
+}

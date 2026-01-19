@@ -87,3 +87,46 @@ where
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::flag::Flag;
+
+    struct TestFlag;
+    impl Flag for TestFlag {
+        type Value = String;
+        fn name() -> &'static str {
+            "test"
+        }
+        fn short() -> Option<char> {
+            None
+        }
+        fn takes_value() -> bool {
+            true
+        }
+    }
+
+    #[test]
+    fn test_option_extract_present() {
+        let mut map = std::collections::HashMap::new();
+        map.insert("test".to_string(), Some("val".to_string()));
+        let ctx = Context::new(map, vec![]);
+
+        // We need FlagVal<TestFlag> which expects TestFlag to be Flag.
+        // And String to be FlagValue (it is).
+
+        let res = Option::<FlagVal<TestFlag>>::from_context(&ctx).unwrap();
+        assert!(res.is_some());
+        assert_eq!(res.unwrap().0, "val");
+    }
+
+    #[test]
+    fn test_option_extract_missing() {
+        let map = std::collections::HashMap::new();
+        let ctx = Context::new(map, vec![]);
+
+        let res = Option::<FlagVal<TestFlag>>::from_context(&ctx).unwrap();
+        assert!(res.is_none());
+    }
+}
