@@ -11,6 +11,15 @@ categories = ["command-line-interface"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[workspace]
+members = [
+    "koral_derive",
+    "examples/hello-world",
+    "examples/todo-app",
+    "examples/sys-monitor",
+    "examples/kv-store",
+]
+
 [dependencies]
 koral_derive = { path = "koral_derive" }
 thiserror = "1.0"
