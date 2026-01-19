@@ -87,6 +87,6 @@ pub enum Commands {
 
 impl Default for Commands {
     fn default() -> Self {
-        Self::List(ListCmd::default())
+        Self::List(ListCmd)
     }
 }

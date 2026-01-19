@@ -27,73 +27,70 @@ pub fn impl_derive_flag(input: TokenStream) -> TokenStream {
                 )
                 .unwrap();
             for meta in nested {
-                match meta {
-                    Meta::NameValue(nv) => {
-                        if nv.path.is_ident("name") {
-                            if let Expr::Lit(expr_lit) = nv.value {
-                                if let Lit::Str(lit) = expr_lit.lit {
-                                    flag_name = lit.value();
-                                }
+                if let Meta::NameValue(nv) = meta {
+                    if nv.path.is_ident("name") {
+                        if let Expr::Lit(expr_lit) = nv.value {
+                            if let Lit::Str(lit) = expr_lit.lit {
+                                flag_name = lit.value();
                             }
-                        } else if nv.path.is_ident("short") {
-                            if let Expr::Lit(expr_lit) = nv.value {
-                                if let Lit::Char(lit) = expr_lit.lit {
-                                    short = Some(lit.value());
-                                }
+                        }
+                    } else if nv.path.is_ident("short") {
+                        if let Expr::Lit(expr_lit) = nv.value {
+                            if let Lit::Char(lit) = expr_lit.lit {
+                                short = Some(lit.value());
                             }
-                        } else if nv.path.is_ident("help") {
-                            if let Expr::Lit(expr_lit) = nv.value {
-                                if let Lit::Str(lit) = expr_lit.lit {
-                                    help = lit.value();
-                                }
+                        }
+                    } else if nv.path.is_ident("help") {
+                        if let Expr::Lit(expr_lit) = nv.value {
+                            if let Lit::Str(lit) = expr_lit.lit {
+                                help = lit.value();
                             }
-                        } else if nv.path.is_ident("default") {
-                            if let Expr::Lit(expr_lit) = nv.value {
-                                if let Lit::Str(lit) = expr_lit.lit {
-                                    default_val = Some(lit.value());
-                                }
+                        }
+                    } else if nv.path.is_ident("default") {
+                        if let Expr::Lit(expr_lit) = nv.value {
+                            if let Lit::Str(lit) = expr_lit.lit {
+                                default_val = Some(lit.value());
                             }
-                        } else if nv.path.is_ident("env") {
-                            if let Expr::Lit(expr_lit) = nv.value {
-                                if let Lit::Str(lit) = expr_lit.lit {
-                                    env_var = Some(lit.value());
-                                }
+                        }
+                    } else if nv.path.is_ident("env") {
+                        if let Expr::Lit(expr_lit) = nv.value {
+                            if let Lit::Str(lit) = expr_lit.lit {
+                                env_var = Some(lit.value());
                             }
-                        } else if nv.path.is_ident("validator") {
-                            if let Expr::Path(expr_path) = nv.value {
-                                validator = Some(expr_path.path);
+                        }
+                    } else if nv.path.is_ident("validator") {
+                        if let Expr::Path(expr_path) = nv.value {
+                            validator = Some(expr_path.path);
+                        }
+                    } else if nv.path.is_ident("aliases") {
+                        if let Expr::Lit(expr_lit) = nv.value {
+                            if let Lit::Str(lit) = expr_lit.lit {
+                                aliases = lit
+                                    .value()
+                                    .split(',')
+                                    .map(|s| s.trim().to_string())
+                                    .collect();
                             }
-                        } else if nv.path.is_ident("aliases") {
-                            if let Expr::Lit(expr_lit) = nv.value {
-                                if let Lit::Str(lit) = expr_lit.lit {
-                                    aliases = lit
-                                        .value()
-                                        .split(',')
-                                        .map(|s| s.trim().to_string())
-                                        .collect();
-                                }
+                        }
+                    } else if nv.path.is_ident("required") {
+                        if let Expr::Lit(expr_lit) = nv.value {
+                            if let Lit::Bool(lit) = expr_lit.lit {
+                                required = lit.value;
                             }
-                        } else if nv.path.is_ident("required") {
-                            if let Expr::Lit(expr_lit) = nv.value {
-                                if let Lit::Bool(lit) = expr_lit.lit {
-                                    required = lit.value;
-                                }
+                        }
+                    } else if nv.path.is_ident("value_name") || nv.path.is_ident("value") {
+                        if let Expr::Lit(expr_lit) = nv.value {
+                            if let Lit::Str(lit) = expr_lit.lit {
+                                value_name = Some(lit.value());
                             }
-                        } else if nv.path.is_ident("value_name") || nv.path.is_ident("value") {
-                            if let Expr::Lit(expr_lit) = nv.value {
-                                if let Lit::Str(lit) = expr_lit.lit {
-                                    value_name = Some(lit.value());
-                                }
-                            }
-                        } else if nv.path.is_ident("help_heading") || nv.path.is_ident("heading") {
-                            if let Expr::Lit(expr_lit) = nv.value {
-                                if let Lit::Str(lit) = expr_lit.lit {
-                                    help_heading = Some(lit.value());
-                                }
+                        }
+                    } else if nv.path.is_ident("help_heading") || nv.path.is_ident("heading") {
+                        if let Expr::Lit(expr_lit) = nv.value {
+                            if let Lit::Str(lit) = expr_lit.lit {
+                                help_heading = Some(lit.value());
                             }
                         }
                     }
-                    _ => {}
                 }
             }
         }

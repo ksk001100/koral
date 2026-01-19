@@ -37,27 +37,24 @@ pub fn impl_derive_subcommand(input: TokenStream) -> TokenStream {
                     .ok();
                 if let Some(nested_meta) = nested {
                     for meta in nested_meta {
-                        match meta {
-                            Meta::NameValue(nv) => {
-                                if nv.path.is_ident("name") {
-                                    if let Expr::Lit(expr_lit) = nv.value {
-                                        if let Lit::Str(lit) = expr_lit.lit {
-                                            cmd_name = lit.value();
-                                        }
+                        if let Meta::NameValue(nv) = meta {
+                            if nv.path.is_ident("name") {
+                                if let Expr::Lit(expr_lit) = nv.value {
+                                    if let Lit::Str(lit) = expr_lit.lit {
+                                        cmd_name = lit.value();
                                     }
-                                } else if nv.path.is_ident("aliases") {
-                                    if let Expr::Lit(expr_lit) = nv.value {
-                                        if let Lit::Str(lit) = expr_lit.lit {
-                                            aliases = lit
-                                                .value()
-                                                .split(',')
-                                                .map(|s| s.trim().to_string())
-                                                .collect();
-                                        }
+                                }
+                            } else if nv.path.is_ident("aliases") {
+                                if let Expr::Lit(expr_lit) = nv.value {
+                                    if let Lit::Str(lit) = expr_lit.lit {
+                                        aliases = lit
+                                            .value()
+                                            .split(',')
+                                            .map(|s| s.trim().to_string())
+                                            .collect();
                                     }
                                 }
                             }
-                            _ => {}
                         }
                     }
                 }

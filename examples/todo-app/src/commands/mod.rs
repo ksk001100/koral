@@ -17,6 +17,6 @@ pub enum TodoCmd {
 
 impl Default for TodoCmd {
     fn default() -> Self {
-        Self::List(list::ListCmd::default())
+        Self::List(list::ListCmd)
     }
 }

@@ -10,6 +10,6 @@ fn hello(_ctx: Context) -> KoralResult<()> {
 }
 
 fn main() -> KoralResult<()> {
-    let mut app = HelloApp::default();
+    let mut app = HelloApp;
     app.run(std::env::args().collect())
 }

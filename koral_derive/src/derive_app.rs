@@ -220,20 +220,18 @@ pub fn impl_derive_app(input: TokenStream) -> TokenStream {
                  #user_action
             }
         }
-    } else {
-        if let Some(action) = action_fn {
-            quote! {
-                fn execute(&mut self, ctx: koral::Context) -> koral::KoralResult<()> {
-                    koral::internal::parser::validate_required_flags(&koral::traits::App::flags(self), &ctx.flags)?;
-                    koral::internal::handler::call_handler(#action, self, ctx)
-                }
+    } else if let Some(action) = action_fn {
+        quote! {
+            fn execute(&mut self, ctx: koral::Context) -> koral::KoralResult<()> {
+                koral::internal::parser::validate_required_flags(&koral::traits::App::flags(self), &ctx.flags)?;
+                koral::internal::handler::call_handler(#action, self, ctx)
             }
-        } else {
-            quote! {
-                fn execute(&mut self, ctx: koral::Context) -> koral::KoralResult<()> {
-                    koral::internal::parser::validate_required_flags(&koral::traits::App::flags(self), &ctx.flags)?;
-                    Ok(())
-                }
+        }
+    } else {
+        quote! {
+            fn execute(&mut self, ctx: koral::Context) -> koral::KoralResult<()> {
+                koral::internal::parser::validate_required_flags(&koral::traits::App::flags(self), &ctx.flags)?;
+                Ok(())
             }
         }
     };

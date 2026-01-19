@@ -21,7 +21,7 @@ pub fn impl_derive_flag_value(input: TokenStream) -> TokenStream {
                 let ident = &v.ident;
                 let ident_str = ident.to_string().to_lowercase();
                 quote! {
-                    Self::#ident => #ident_str.to_string(),
+                    Self::#ident => write!(f, "{}", #ident_str),
                 }
             });
 
@@ -37,8 +37,8 @@ pub fn impl_derive_flag_value(input: TokenStream) -> TokenStream {
                     }
                 }
 
-                impl ToString for #name {
-                    fn to_string(&self) -> String {
+                impl std::fmt::Display for #name {
+                    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
                         match self {
                             #(#to_string_arms)*
                         }
@@ -61,10 +61,10 @@ pub fn impl_derive_flag_value(input: TokenStream) -> TokenStream {
                             }
                         }
 
-                        impl ToString for #name {
-                            fn to_string(&self) -> String {
-                                self.0.to_string()
-                            }
+                        impl std::fmt::Display for #name {
+                           fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                               write!(f, "{}", self.0)
+                           }
                         }
                     };
                     gen.into()
