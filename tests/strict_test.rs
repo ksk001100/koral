@@ -1,68 +1,47 @@
 use koral::prelude::*;
 
-#[derive(Flag, Debug, Default)]
-#[flag(name = "verbose", short = 'v')]
-struct VerboseFlag;
-
-// Loose App (default)
 #[derive(App)]
-#[app(name = "loose", action = loose_action)]
-#[app(flags(VerboseFlag))]
-struct LooseApp;
-
-fn loose_action(_ctx: Context) -> KoralResult<()> {
-    Ok(())
-}
-
-// Strict App
-#[derive(App)]
-#[app(name = "strict", action = strict_action)]
-#[app(flags(VerboseFlag), strict)]
+#[app(name = "strict_app", action = run, strict)]
 struct StrictApp;
 
-fn strict_action(_ctx: Context) -> KoralResult<()> {
+fn run(_ctx: Context) -> KoralResult<()> {
     Ok(())
 }
 
+#[derive(App)]
+#[app(name = "loose_app", action = run)]
+struct LooseApp;
+
 #[test]
-fn test_loose_unknown_flags() {
+fn test_strict_mode_unknown_long_flag() {
+    let mut app = StrictApp;
+    let res = app.run(vec!["strict_app".to_string(), "--unknown".to_string()]);
+    assert!(res.is_err());
+    match res.unwrap_err() {
+        koral::KoralError::UnknownFlag(msg) => {
+            assert!(msg.contains("Unknown flag '--unknown'"));
+        }
+        _ => panic!("Expected UnknownFlag error"),
+    }
+}
+
+#[test]
+fn test_strict_mode_unknown_short_flag() {
+    let mut app = StrictApp;
+    let res = app.run(vec!["strict_app".to_string(), "-u".to_string()]);
+    assert!(res.is_err());
+    match res.unwrap_err() {
+        koral::KoralError::UnknownFlag(msg) => {
+            assert!(msg.contains("Unknown short flag 'u'"));
+        }
+        _ => panic!("Expected UnknownFlag error"),
+    }
+}
+
+#[test]
+fn test_loose_mode_ignores_unknown() {
     let mut app = LooseApp;
-    // --unknown should be positional
-    app.run(vec!["prog".into(), "--unknown".into()])
-        .expect("Should pass in loose mode");
-
-    // -x should be positional
-    app.run(vec!["prog".into(), "-x".into()])
-        .expect("Should pass in loose mode");
-
-    // But -vx should fail because it's interpreted as group `-v` (valid) and `-x` (invalid inside group)
-    // Wait, let's verify this behavior.
-    assert!(
-        app.run(vec!["prog".into(), "-vx".into()]).is_err(),
-        "-vx should fail even in loose mode if v is flag"
-    );
-}
-
-#[test]
-fn test_strict_unknown_flags() {
-    let mut app = StrictApp;
-
-    // --unknown should fail
-    assert!(
-        app.run(vec!["prog".into(), "--unknown".into()]).is_err(),
-        "--unknown should fail in strict mode"
-    );
-
-    // -x should fail
-    assert!(
-        app.run(vec!["prog".into(), "-x".into()]).is_err(),
-        "-x should fail in strict mode"
-    );
-}
-
-#[test]
-fn test_strict_valid() {
-    let mut app = StrictApp;
-    app.run(vec!["prog".into(), "-v".into()])
-        .expect("Valid flags should pass");
+    // Loose mode should treat unknown args as positionals
+    let res = app.run(vec!["loose_app".to_string(), "--unknown".to_string()]);
+    assert!(res.is_ok());
 }

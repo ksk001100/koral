@@ -14,6 +14,7 @@ pub fn impl_derive_flag(input: TokenStream) -> TokenStream {
     let mut env_var: Option<String> = None;
     let mut validator: Option<syn::Path> = None;
     let mut aliases: Vec<String> = Vec::new();
+    let mut required = false;
 
     // Parse attributes
     for attr in input.attrs {
@@ -70,6 +71,12 @@ pub fn impl_derive_flag(input: TokenStream) -> TokenStream {
                                         .collect();
                                 }
                             }
+                        } else if nv.path.is_ident("required") {
+                            if let Expr::Lit(expr_lit) = nv.value {
+                                if let Lit::Bool(lit) = expr_lit.lit {
+                                    required = lit.value;
+                                }
+                            }
                         }
                     }
                     _ => {}
@@ -84,7 +91,12 @@ pub fn impl_derive_flag(input: TokenStream) -> TokenStream {
             Fields::Unit => (quote! { bool }, false, true),
             Fields::Unnamed(fields) if fields.unnamed.len() == 1 => {
                 let ty = &fields.unnamed.first().unwrap().ty;
-                (quote! { #ty }, true, false)
+                let is_bool = if let syn::Type::Path(p) = ty {
+                    p.path.is_ident("bool")
+                } else {
+                    false
+                };
+                (quote! { #ty }, !is_bool, is_bool)
             }
             _ => panic!("Flag derive only supports unit structs or tuple structs with 1 element"),
         },
@@ -149,6 +161,10 @@ pub fn impl_derive_flag(input: TokenStream) -> TokenStream {
 
             fn aliases() -> Vec<&'static str> {
                 vec![#(#aliases),*]
+            }
+
+            fn required() -> bool {
+                #required
             }
         }
     };

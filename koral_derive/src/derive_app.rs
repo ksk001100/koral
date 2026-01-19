@@ -13,6 +13,7 @@ pub fn impl_derive_app(input: TokenStream) -> TokenStream {
 
     let mut flag_registrations = Vec::new();
     let mut subcommand_registrations = Vec::new();
+    let mut middleware_registrations = Vec::new();
 
     // Automatic dispatch support
     let mut dispatch_field: Option<(syn::Ident, syn::Type)> = None;
@@ -69,6 +70,20 @@ pub fn impl_derive_app(input: TokenStream) -> TokenStream {
                                         });
                                     }
                                 }
+                            } else if list.path.is_ident("middleware") {
+                                // middleware(MW1, MW2)
+                                let types = list
+                                    .parse_args_with(
+                                        syn::punctuated::Punctuated::<syn::Type, syn::Token![,]>::parse_terminated,
+                                    )
+                                    .ok();
+                                if let Some(types) = types {
+                                    for ty in types {
+                                        middleware_registrations.push(quote! {
+                                            mws.push(Box::new(#ty::default()));
+                                        });
+                                    }
+                                }
                             }
                         }
 
@@ -89,6 +104,7 @@ pub fn impl_derive_app(input: TokenStream) -> TokenStream {
                 let ident = field.ident.clone().unwrap();
                 let ty = field.ty;
                 let mut is_subcommand = false;
+                let mut is_middleware = false;
                 let mut ignore = false;
 
                 for attr in field.attrs {
@@ -101,6 +117,8 @@ pub fn impl_derive_app(input: TokenStream) -> TokenStream {
                                         is_subcommand = true;
                                     } else if path.is_ident("ignore") || path.is_ident("skip") {
                                         ignore = true;
+                                    } else if path.is_ident("middleware") {
+                                        is_middleware = true;
                                     }
                                 }
                             }
@@ -113,6 +131,12 @@ pub fn impl_derive_app(input: TokenStream) -> TokenStream {
                         let _ = &self.#ident;
                     });
                     continue;
+                }
+
+                if is_middleware {
+                    middleware_registrations.push(quote! {
+                        mws.push(Box::new(self.#ident.clone()));
+                    });
                 }
 
                 if is_subcommand {
@@ -229,6 +253,11 @@ pub fn impl_derive_app(input: TokenStream) -> TokenStream {
                 #strict
             }
 
+            fn middlewares(&self) -> Vec<Box<dyn koral::Middleware>> {
+                let mut mws: Vec<Box<dyn koral::Middleware>> = Vec::new();
+                #(#middleware_registrations)*
+                mws
+            }
 
             #action_impl
         }

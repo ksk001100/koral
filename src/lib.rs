@@ -40,8 +40,15 @@ pub(crate) mod command;
 pub mod completion;
 pub(crate) mod context;
 pub(crate) mod error;
+/// Extractors for dependency injection.
+pub mod extract;
 pub(crate) mod flag;
 pub(crate) mod handler;
+/// Help message generation.
+pub mod help;
+/// Middlewares.
+pub mod middleware;
+/// Command line argument parser.
 pub(crate) mod parser;
 /// Core traits for the Koral framework.
 pub mod traits;
@@ -56,6 +63,9 @@ pub mod internal {
     }
     pub mod context {
         pub use crate::context::*;
+    }
+    pub mod extract {
+        pub use crate::extract::*;
     }
     pub mod error {
         pub use crate::error::*;
@@ -95,12 +105,19 @@ pub mod prelude {
     //! - `FromArgs` (Trait)
     //! - `FlagValue` (Trait)
     //! - `CommandDef` (Struct)
+    //! - `Middleware` (Trait)
+    //! - `FromContext` (Trait)
+    //! - `State` (Extractor)
+    //! - `FlagArg` (Extractor)
+    //! - `Args` (Extractor)
 
     pub use crate::app::App;
     pub use crate::command::CommandDef;
     pub use crate::context::Context;
     pub use crate::error::{KoralError, KoralResult};
+    pub use crate::extract::{Args, FlagVal as FlagArg, FromContext, State};
     pub use crate::flag::{Flag, FlagDef};
+    pub use crate::middleware::Middleware;
     pub use crate::traits::{App as AppTrait, FlagValue, FromArgs};
     pub use koral_derive::{App, Flag, FlagValue, Subcommand};
 }
@@ -110,6 +127,8 @@ pub use command::CommandDef;
 pub use completion::{generate_to, Shell};
 pub use context::Context;
 pub use error::{KoralError, KoralResult};
+pub use extract::{Args, FlagVal as FlagArg, FromContext, State};
 pub use flag::{Flag, FlagDef};
 pub use koral_derive::{App, Flag, FlagValue, Subcommand};
+pub use middleware::Middleware;
 pub use traits::{FlagValue, FromArgs};

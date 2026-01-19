@@ -52,6 +52,11 @@ pub trait App {
         vec![]
     }
 
+    /// Returns a list of middlewares to execute.
+    fn middlewares(&self) -> Vec<Box<dyn crate::middleware::Middleware>> {
+        vec![]
+    }
+
     /// Returns whether strict mode is enabled.
     fn is_strict(&self) -> bool {
         false
@@ -99,7 +104,8 @@ pub trait App {
             return Ok(());
         }
 
-        let ctx = {
+        // Parse arguments
+        let (mut flags_map, mut positionals) = {
             let parser = crate::parser::Parser::new(self.flags()).strict(self.is_strict());
             // Skip argv[0] (program name)
             let args_to_parse = if !args.is_empty() {
@@ -107,13 +113,41 @@ pub trait App {
             } else {
                 &args[..]
             };
-            parser.parse(args_to_parse)?
+            let ctx = parser.parse(args_to_parse)?;
+            (ctx.flags, ctx.args)
         };
 
-        // Inject state
-        let ctx = ctx.with_state(state);
+        let middlewares = self.middlewares();
 
-        self.execute(ctx)
+        // Execute Middleware 'before' hooks
+        // We create a temporary context for BEFORE hooks
+        {
+            let mut ctx = Context::new(flags_map.clone(), positionals.clone()).with_state(state);
+            for mw in &middlewares {
+                mw.before(&mut ctx)?;
+            }
+            // Capture any modifications to flags/args?
+            // For now, we update our local copies.
+            flags_map = ctx.flags;
+            positionals = ctx.args;
+        }
+
+        // Execute Command
+        // Create context for execution (consumes it)
+        let result = {
+            let ctx = Context::new(flags_map.clone(), positionals.clone()).with_state(state);
+            self.execute(ctx)
+        };
+
+        // Execute Middleware 'after' hooks
+        if result.is_ok() {
+            let mut ctx = Context::new(flags_map, positionals).with_state(state);
+            for mw in middlewares.iter().rev() {
+                mw.after(&mut ctx)?;
+            }
+        }
+
+        result
     }
 
     /// Run the application with the given arguments.
@@ -155,7 +189,8 @@ pub trait App {
             return Ok(());
         }
 
-        let ctx = {
+        // Parse arguments
+        let (mut flags_map, mut positionals) = {
             let parser = crate::parser::Parser::new(self.flags()).strict(self.is_strict());
             // Skip argv[0] (program name)
             let args_to_parse = if args.is_empty() {
@@ -163,94 +198,47 @@ pub trait App {
             } else {
                 &args[1..]
             };
-            parser.parse(args_to_parse)?
+            let ctx = parser.parse(args_to_parse)?;
+            (ctx.flags, ctx.args)
         };
 
-        self.execute(ctx)
+        let middlewares = self.middlewares();
+
+        // Execute Middleware 'before' hooks
+        // We define a dummy state for run() which has no shared state
+        // But Context expects `state` as Option<&mut dyn Any>.
+        // Since we don't have a state here, we pass None (implied by default or we can't call with_state).
+        // Wait, `with_state` takes `&mut dyn Any`.
+        // If we don't have state, we just don't call `with_state`.
+
+        {
+            let mut ctx = Context::new(flags_map.clone(), positionals.clone());
+            for mw in &middlewares {
+                mw.before(&mut ctx)?;
+            }
+            flags_map = ctx.flags;
+            positionals = ctx.args;
+        }
+
+        // Execute Command
+        let result = {
+            let ctx = Context::new(flags_map.clone(), positionals.clone());
+            self.execute(ctx)
+        };
+
+        // Execute Middleware 'after' hooks
+        if result.is_ok() {
+            let mut ctx = Context::new(flags_map, positionals);
+            for mw in middlewares.iter().rev() {
+                mw.after(&mut ctx)?;
+            }
+        }
+
+        result
     }
 
     /// Print help message to stdout.
     fn print_help(&self) {
-        println!("Usage: {} [options] [command]", self.name());
-        let desc = self.description();
-        if !desc.is_empty() {
-            println!("{}", desc);
-        }
-
-        println!("\nOptions:");
-
-        struct HelpItem {
-            name: String,
-            desc: String,
-        }
-
-        let mut items = Vec::new();
-
-        // Built-in flags
-        items.push(HelpItem {
-            name: "--version".to_string(),
-            desc: "Show version information".to_string(),
-        });
-        items.push(HelpItem {
-            name: "--help, -h".to_string(),
-            desc: "Show help information".to_string(),
-        });
-
-        for flag in self.flags() {
-            let mut name_part = format!("--{}", flag.name);
-            if let Some(s) = flag.short {
-                name_part.push_str(&format!(", -{}", s));
-            }
-
-            if flag.takes_value {
-                name_part.push_str(" <value>");
-            }
-
-            if !flag.aliases.is_empty() {
-                name_part.push_str(" (aliases: ");
-                name_part.push_str(
-                    &flag
-                        .aliases
-                        .iter()
-                        .map(|a| format!("--{}", a))
-                        .collect::<Vec<_>>()
-                        .join(", "),
-                );
-                name_part.push(')');
-            }
-
-            items.push(HelpItem {
-                name: name_part,
-                desc: flag.help,
-            });
-        }
-
-        // Calculate max width for alignment
-        let max_width = items.iter().map(|i| i.name.len()).max().unwrap_or(0);
-        let padding = 2; // Extra space between name and desc
-
-        for item in items {
-            // Manual padding since dynamic width in format! macro can be tricky with string length vs char counts,
-            // but here we deal with ASCII mostly.
-            let pad_len = max_width.saturating_sub(item.name.len()) + padding;
-            let pad = " ".repeat(pad_len);
-            println!("  {}{}{}", item.name, pad, item.desc);
-        }
-
-        let subs = self.subcommands();
-        if !subs.is_empty() {
-            println!("\nCommands:");
-            let max_sub_width = subs.iter().map(|s| s.name.len()).max().unwrap_or(0);
-
-            for sub in subs {
-                let pad_len = max_sub_width.saturating_sub(sub.name.len()) + padding;
-                let pad = " ".repeat(pad_len);
-                let mut line = format!("  {}{}{}", sub.name, pad, sub.description);
-                if !sub.aliases.is_empty() {
-                    line.push_str(&format!(" (aliases: {})", sub.aliases.join(", ")));
-                }
-                println!("{}", line);
-            }
-        }
+        print!("{}", crate::help::generate_help(self));
     }
 }

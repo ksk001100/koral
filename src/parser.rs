@@ -69,7 +69,7 @@ impl Parser {
                 } else {
                     // Unknown long flag
                     if self.strict {
-                        return Err(KoralError::Validation(format!("Unknown flag '{}'", arg)));
+                        return Err(KoralError::UnknownFlag(format!("Unknown flag '{}'", arg)));
                     }
                     positionals.push(arg.clone());
                 }
@@ -101,7 +101,7 @@ impl Parser {
 
                 if first_match.is_none() {
                     if self.strict {
-                        return Err(KoralError::Validation(format!(
+                        return Err(KoralError::UnknownFlag(format!(
                             "Unknown short flag '{}' in '{}'",
                             first_char, arg
                         )));
@@ -135,7 +135,7 @@ impl Parser {
                         // If we are "strict", error.
                         // If "loose", maybe ignore?
                         // Returning error seems safest for now to avoid confusion.
-                        return Err(KoralError::Validation(format!(
+                        return Err(KoralError::UnknownFlag(format!(
                             "Unknown short flag '-{}' in group '{}'",
                             c, arg
                         )));
@@ -176,6 +176,14 @@ impl Parser {
 
         // Validate flags
         for flag in &self.known_flags {
+            // Check required
+            if flag.required && !flags_map.contains_key(&flag.name) {
+                return Err(KoralError::MissingArgument(format!(
+                    "Required flag '--{}' is missing",
+                    flag.name
+                )));
+            }
+
             if let Some(validator) = flag.validator {
                 if let Some(Some(val)) = flags_map.get(&flag.name) {
                     if let Err(e) = validator(val) {

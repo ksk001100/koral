@@ -12,20 +12,17 @@ Koral provides a declarative way to build Command Line Interfaces. By leveraging
 Unlike other CLI libraries where the parsed result *is* your struct, Koral separates them:
 
 1.  **Definition**: You define **Flags** and **Apps** as structs/enums with attributes. These represent *what* your CLI accepts.
-2.  **State**: At runtime, Koral parses arguments into a `Context`. Your application logic receives this context and retrieves values using your Flag types as keys.
+2.  **State**: At runtime, Koral parses arguments into a `Context`. Your application logic receives this context (or extracts values from it) and processes data.
 
-This approach keeps your application logic clean and decoupling it from the parsing mechanics.
+## Key Features
 
-## Features
-
-- **Declarative Macros**: Use `#[derive(App)]`, `#[derive(Subcommand)]`, and `#[derive(Flag)]` to define your CLI with minimal boilerplate.
-- **Type-Safe Flags**: Flags are types. Retrieve them safely from the context (e.g., `ctx.get::<VerboseFlag>()`).
-- **Reuse**: Define a `VerboseFlag` once and reuse it across multiple subcommands or applications.
-- **Custom Types**: Easily parse Enums or Structs from flags using `#[derive(FlagValue)]`.
-- **Flexible Handlers**: Action handlers can be `fn(Context)` or `fn(&mut App, Context)`.
-- **Validation**: Add custom validation logic to flags using `#[flag(validator = ...)]`.
-- **Aliases**: Define multiple names for flags and subcommands using `aliases`.
-- **Shell Completion**: Generate completion scripts for Bash, Zsh, and Fish.
+- **Declarative Macros**: Use `#[derive(App)]`, `#[derive(Subcommand)]`, and `#[derive(Flag)]`.
+- **Dependency Injection**: Defines handlers that extract States and Flags directly (`fn run(state: State<S>, verbose: FlagVal<V>)`).
+- **Middleware**: Hook into lifecycle execution (`before`/`after`) for logging, auth, etc. Supports both static registration and dynamic injection.
+- **Type-Safe**: Flags are strongly typed. Custom types (Enums/Structs) supported via `#[derive(FlagValue)]`.
+- **Extensible**: Share state easily across subcommands.
+- **Validation**: strict mode, required flags, and custom validators.
+- **Shell Completion**: Generate scripts for Bash, Zsh, and Fish.
 
 ## Installation
 
@@ -33,183 +30,136 @@ This approach keeps your application logic clean and decoupling it from the pars
 cargo add --git https://github.com/ksk001100/koral
 ```
 
-## Quick Start
-
-### Simple Application
-
-Define your app and flags using macros. You can access the application instance state via `ctx.app`!
+## Quick Start (Dependency Injection Style)
 
 ```rust
 use koral::prelude::*;
 
+// 1. Define State
+#[derive(Default, Clone)]
+struct AppState {
+    count: u32,
+}
+
+// 2. Define Flags
 #[derive(Flag, Debug)]
 #[flag(name = "verbose", short = 'v', help = "Enable verbose output")]
-struct VerboseFlag;
+struct VerboseFlag(bool);
 
 #[derive(Flag, Debug)]
-#[flag(name = "name", default = "World", help = "Name to greet")]
+#[flag(name = "name", default = "World", help = "Target name")]
 struct NameFlag(String);
 
+// 3. Define App
 #[derive(App)]
 #[app(name = "greet", version = "1.0", action = run)]
 #[app(flags(VerboseFlag, NameFlag))]
-struct GreetApp {
-    greet_count: u32,
-}
+struct GreetApp;
 
-// Handler receives Context<GreetApp> to access the app instance
-fn run(mut ctx: Context<GreetApp>) -> KoralResult<()> {
-    if let Some(app) = &mut ctx.app {
-        app.greet_count += 1;
+// 4. Define Handler with DI
+// Koral automatically injects State, Flags, and Args!
+fn run(
+    state: State<AppState>, 
+    verbose: FlagArg<VerboseFlag>, 
+    name: FlagArg<NameFlag>
+) -> KoralResult<()> {
+    if *verbose {
+        println!("Debug: State count is {}", state.count);
     }
-
-    let verbose = ctx.get::<VerboseFlag>().unwrap_or(false);
-    let name = ctx.get::<NameFlag>().expect("Default value guaranteed");
-
-    if verbose {
-        println!("Debug mode: ON");
-    }
-    println!("Hello, {}!", name);
+    println!("Hello, {}!", *name);
     Ok(())
 }
 
 fn main() -> KoralResult<()> {
-    let mut app = GreetApp { greet_count: 0 };
-    app.run(std::env::args().skip(1).collect())
+    // Run with state
+    let mut state = AppState { count: 42 };
+    let mut app = GreetApp;
+    app.run_with_state(&mut state, std::env::args().collect())
 }
 ```
 
-Run it:
-```bash
-cargo run --example simple -- --name Koral --verbose
+## Advanced Features
+
+### Middleware (Hooks)
+
+You can define logic to run before and after your command.
+
+**Static Registration** (Simple):
+```rust
+#[derive(Default)]
+struct LoggerMiddleware;
+impl Middleware for LoggerMiddleware {
+    fn before(&self, _: &mut Context) -> KoralResult<()> {
+        println!("Starting...");
+        Ok(())
+    }
+}
+
+#[derive(App)]
+#[app(middleware(LoggerMiddleware))]
+struct MyApp;
+```
+
+**Dynamic Injection** (Configurable):
+```rust
+#[derive(Clone)]
+struct AuthMiddleware { api_key: String }
+impl Middleware for AuthMiddleware { ... }
+
+#[derive(App)]
+struct MyApp {
+    #[app(middleware)] // Injects this field as middleware
+    auth: AuthMiddleware
+}
+
+fn main() {
+    let app = MyApp { 
+        auth: AuthMiddleware { api_key: "secret".into() } 
+    };
+    app.run(args);
+}
+```
+
+### Required & Strict Mode
+
+- **Required Flags**: Add `required = true` to `#[flag(...)]`.
+- **Strict Mode**: Add `#[app(strict)]` to treat unknown flags as errors instead of positional args.
+
+```rust
+#[derive(Flag)]
+#[flag(name = "token", required = true)]
+struct TokenFlag(String);
+
+#[derive(App)]
+#[app(name = "secure-app", strict)]
+#[app(flags(TokenFlag))]
+struct SecureApp;
 ```
 
 ### Custom Flag Types
 
-You can use standard Rust Enums or Structs as flag values by deriving `FlagValue`.
+Easily parse Enums or Structs.
 
-#### Enums (Choice)
 ```rust
-#[derive(FlagValue, Clone, Debug, PartialEq)]
+#[derive(FlagValue, Clone, Debug, PartialEq)] // Auto-implements FromStr/ToString
 enum Format {
     Json,
     Text,
 }
 
-#[derive(Flag, Debug)]
+#[derive(Flag)]
 #[flag(name = "format", default = "text")]
 struct FormatFlag(Format);
 ```
 
-#### Structs (NewType)
-```rust
-#[derive(FlagValue, Clone, Debug, PartialEq)]
-struct RetryCount(u32);
-
-#[derive(Flag, Debug)]
-#[flag(name = "retry", default = "3")]
-struct RetryFlag(RetryCount);
-```
-
-#### Complex Structs (Manual Parsing)
-For structs with multiple fields, you must implement `FromStr` manually to define how the string should be parsed (e.g., CSV, JSON).
-
-```rust
-struct Person { name: String, age: u32 }
-
-impl FromStr for Person {
-    type Err = String;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        // Parse "name,age" string...
-    }
-}
-// Once FromStr is implemented, you can use it in a flag:
-#[derive(Flag)]
-struct PersonFlag(Person);
-```
-
-### Validation
-
-You can ensure flag values meet specific criteria by providing a validator function.
-
-```rust
-fn validate_positive(s: &str) -> Result<(), String> {
-    let val: i32 = s.parse().map_err(|_| "Must be a number")?;
-    if val <= 0 {
-        return Err("Must be positive".to_string());
-    }
-    Ok(())
-}
-
-#[derive(Flag)]
-#[flag(name = "count", validator = validate_positive)]
-struct CountFlag(i32);
-```
-
-### Aliases
-
-You can define alternative names for flags and subcommands.
-
-```rust
-#[derive(Flag)]
-#[flag(name = "list", aliases = "ls, l")]
-struct ListFlag;
-
-#[derive(Subcommand)]
-enum commands {
-    #[subcommand(name = "remove", aliases = "rm, del")]
-    Remove(RemoveCmd),
-}
-```
-
 ### Shell Completion
 
-Generate completion scripts for your application.
+Generate completion scripts.
 
 ```rust
 use koral::completion::{Shell, generate_to};
-
-// Inside a subcommand handler
-let shell = Shell::Bash;
-generate_to(&app, shell, &mut std::io::stdout())?;
-```
-
-## Advanced Usage: Todo App
-
-Check `examples/todo.rs` for a complete Todo application demonstrating:
-
-*   **Subcommands**: `add`, `list`, `done`
-*   **Positional Arguments**: `todo add "Buy milk"`
-*   **Global & Local Flags**: `--all`, `--verbose`
-*   **Shared State**: `Arc<Mutex<TodoState>>`
-
-```rust
-// Action handler for a subcommand
-fn add_task(ctx: Context) -> KoralResult<()> {
-    if ctx.args.is_empty() {
-        println!("Error: Task description required.");
-        return Ok(());
-    }
-    let task = ctx.args.join(" ");
-    
-    // Access shared state
-    let state = ctx
-        .state::<Arc<Mutex<TodoState>>>()
-        .expect("State mismatch");
-    let mut guard = state.lock().unwrap();
-    guard.tasks.push(task.clone());
-
-    println!("Added task: '{}'", task);
-    Ok(())
-}
-```
-
-```bash
-# Add a task
-cargo run --example todo -- add "Buy milk"
-
-# List tasks
-cargo run --example todo -- list --all
+// ... inside handler ...
+generate_to(&app, Shell::Bash, &mut std::io::stdout())?;
 ```
 
 ## Examples
@@ -217,6 +167,6 @@ cargo run --example todo -- list --all
 | Example | Description | Command |
 |---------|-------------|---------|
 | `simple` | Basic usage with `derive(App)` | `cargo run --example simple` |
+| `comprehensive` | **New!** Features showcase (DI, Middleware, etc.) | `cargo run --example comprehensive` |
 | `custom_types` | Usage of Enums and Structs as Flags | `cargo run --example custom_types` |
-| `complex_flag_manual` | Manual parsing for multi-field structs | `cargo run --example complex_flag_manual -- --person "Bob,25"` |
-| `todo` | Todo App with subcommands and complex logic | `cargo run --example todo -- --help` |
+| `todo` | Full application with subcommands and state | `cargo run --example todo` |

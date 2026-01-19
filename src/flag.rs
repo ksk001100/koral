@@ -24,6 +24,8 @@ pub struct FlagDef {
     pub validator: Option<Validator>,
     /// Aliases for the flag
     pub aliases: Vec<String>,
+    /// Whether the flag is required
+    pub required: bool,
 }
 
 impl FlagDef {
@@ -39,6 +41,7 @@ impl FlagDef {
             env: F::env().map(|s| s.to_string()),
             validator: F::validator(),
             aliases: F::aliases().into_iter().map(|s| s.to_string()).collect(),
+            required: F::required(),
         }
     }
 }
@@ -94,5 +97,10 @@ where
     /// Aliases for the flag.
     fn aliases() -> Vec<&'static str> {
         vec![]
+    }
+
+    /// Whether the flag is required.
+    fn required() -> bool {
+        false
     }
 }
