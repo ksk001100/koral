@@ -8,6 +8,7 @@ pub fn impl_derive_app(input: TokenStream) -> TokenStream {
 
     let mut app_name = name.to_string().to_lowercase();
     let mut version = "0.0.0".to_string();
+    let mut description = "".to_string(); // Added description
     let mut strict = false;
     let mut action_fn = None;
 
@@ -40,6 +41,13 @@ pub fn impl_derive_app(input: TokenStream) -> TokenStream {
                                 if let Expr::Lit(expr_lit) = nv.value {
                                     if let Lit::Str(lit) = expr_lit.lit {
                                         version = lit.value();
+                                    }
+                                }
+                            } else if nv.path.is_ident("description") {
+                                // Added description parsing
+                                if let Expr::Lit(expr_lit) = nv.value {
+                                    if let Lit::Str(lit) = expr_lit.lit {
+                                        description = lit.value();
                                     }
                                 }
                             } else if nv.path.is_ident("action") {
@@ -238,6 +246,10 @@ pub fn impl_derive_app(input: TokenStream) -> TokenStream {
 
             fn version(&self) -> &str {
                 #version
+            }
+
+            fn description(&self) -> &str { // Added implementation
+                #description
             }
 
             fn flags(&self) -> Vec<koral::internal::flag::FlagDef> {

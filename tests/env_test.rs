@@ -1,5 +1,5 @@
 use koral::prelude::*;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, OnceLock};
 
 #[derive(Flag, Debug, Default)]
 #[flag(name = "envflag", env = "KORAL_TEST_ENV")]
@@ -26,8 +26,15 @@ fn test_action(ctx: Context) -> KoralResult<()> {
     Ok(())
 }
 
+// Use a lock to serialize tests that modify the same environment variable
+fn env_lock() -> &'static Mutex<()> {
+    static ENV_LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+    ENV_LOCK.get_or_init(|| Mutex::new(()))
+}
+
 #[test]
 fn test_env_var_flag() {
+    let _guard = env_lock().lock().unwrap();
     std::env::set_var("KORAL_TEST_ENV", "from_env");
 
     let result_store = Arc::new(Mutex::new(None));
@@ -36,6 +43,8 @@ fn test_env_var_flag() {
 
     let mut state: Arc<Mutex<Option<TestResult>>> = result_store.clone();
 
+    // Ensure we handle potential errors instead of unwrap causing poison if it panics?
+    // Actually unwrap is fine for tests.
     app.run_with_state(&mut state, args).unwrap();
 
     let guard = result_store.lock().unwrap();
@@ -50,6 +59,7 @@ fn test_env_var_flag() {
 
 #[test]
 fn test_env_override() {
+    let _guard = env_lock().lock().unwrap();
     std::env::set_var("KORAL_TEST_ENV", "from_env");
 
     let result_store = Arc::new(Mutex::new(None));
