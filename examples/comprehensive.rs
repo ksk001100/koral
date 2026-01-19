@@ -65,7 +65,7 @@ enum OutputFormat {
 
 #[derive(Flag, Debug)]
 #[flag(name = "verbose", short = 'v', help = "Enable verbose logging")]
-struct VerboseFlag(bool);
+struct VerboseFlag(#[allow(dead_code)] bool);
 
 #[derive(Flag, Debug)]
 #[flag(
@@ -74,11 +74,11 @@ struct VerboseFlag(bool);
     default = "text",
     help = "Output format (json, text, yaml)"
 )]
-struct FormatFlag(OutputFormat);
+struct FormatFlag(#[allow(dead_code)] OutputFormat);
 
 #[derive(Flag, Debug)]
 #[flag(name = "user", required = true, help = "User name (required)")]
-struct UserFlag(String);
+struct UserFlag(#[allow(dead_code)] String);
 
 // =============================================================================
 // 4. SUBCOMMANDS

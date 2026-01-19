@@ -74,3 +74,16 @@ impl<'a, T: 'static + Clone> FromContext<'a> for State<T> {
         }
     }
 }
+
+impl<'a, T> FromContext<'a> for Option<T>
+where
+    T: FromContext<'a>,
+{
+    fn from_context(ctx: &'a Context) -> KoralResult<Self> {
+        match T::from_context(ctx) {
+            Ok(v) => Ok(Some(v)),
+            Err(crate::KoralError::MissingArgument(_)) => Ok(None),
+            Err(e) => Err(e),
+        }
+    }
+}

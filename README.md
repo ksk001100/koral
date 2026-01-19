@@ -166,7 +166,7 @@ generate_to(&app, Shell::Bash, &mut std::io::stdout())?;
 
 | Example | Description | Command |
 |---------|-------------|---------|
-| `simple` | Basic usage with `derive(App)` | `cargo run --example simple` |
-| `comprehensive` | **New!** Features showcase (DI, Middleware, etc.) | `cargo run --example comprehensive` |
-| `custom_types` | Usage of Enums and Structs as Flags | `cargo run --example custom_types` |
+| `hello` | Minimal "Hello World" example | `cargo run --example hello` |
 | `todo` | Full application with subcommands and state | `cargo run --example todo` |
+| `comprehensive` | Features showcase (DI, Middleware, etc.) | `cargo run --example comprehensive` |
+| `complex_flag_manual` | Manual implementation of types for Flags | `cargo run --example complex_flag_manual` |

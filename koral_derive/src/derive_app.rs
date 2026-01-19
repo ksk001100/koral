@@ -208,6 +208,7 @@ pub fn impl_derive_app(input: TokenStream) -> TokenStream {
                  }
 
                  // Fallback to user action
+                 koral::internal::parser::validate_required_flags(&koral::traits::App::flags(self), &ctx.flags)?;
                  #user_action
             }
         }
@@ -215,12 +216,14 @@ pub fn impl_derive_app(input: TokenStream) -> TokenStream {
         if let Some(action) = action_fn {
             quote! {
                 fn execute(&mut self, ctx: koral::Context) -> koral::KoralResult<()> {
+                    koral::internal::parser::validate_required_flags(&koral::traits::App::flags(self), &ctx.flags)?;
                     koral::internal::handler::call_handler(#action, self, ctx)
                 }
             }
         } else {
             quote! {
-                fn execute(&mut self, _ctx: koral::Context) -> koral::KoralResult<()> {
+                fn execute(&mut self, ctx: koral::Context) -> koral::KoralResult<()> {
+                    koral::internal::parser::validate_required_flags(&koral::traits::App::flags(self), &ctx.flags)?;
                     Ok(())
                 }
             }

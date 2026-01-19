@@ -6,6 +6,7 @@ use std::collections::HashMap;
 pub struct Parser {
     known_flags: Vec<crate::flag::FlagDef>,
     strict: bool,
+    ignore_required: bool,
 }
 
 impl Parser {
@@ -14,6 +15,7 @@ impl Parser {
         Self {
             known_flags: flags,
             strict: false,
+            ignore_required: false,
         }
     }
 
@@ -23,9 +25,16 @@ impl Parser {
         self
     }
 
+    /// Helper to set whether to ignore required flags (e.g. for help)
+    pub fn ignore_required(mut self, ignore: bool) -> Self {
+        self.ignore_required = ignore;
+        self
+    }
+
     /// Parse the provided arguments into a Context.
     pub fn parse<'a>(&self, args: &[String]) -> KoralResult<Context<'a>> {
         let mut flags_map: HashMap<String, Option<String>> = HashMap::new();
+
         let mut positionals: Vec<String> = Vec::new();
 
         let mut iter = args.iter();
@@ -177,7 +186,7 @@ impl Parser {
         // Validate flags
         for flag in &self.known_flags {
             // Check required
-            if flag.required && !flags_map.contains_key(&flag.name) {
+            if !self.ignore_required && flag.required && !flags_map.contains_key(&flag.name) {
                 return Err(KoralError::MissingArgument(format!(
                     "Required flag '--{}' is missing",
                     flag.name
@@ -234,4 +243,21 @@ impl Parser {
         }
         Ok(())
     }
+}
+
+/// Helper function to validate required flags externally.
+/// Used by generated App code to enforce requirements only when specific action is executed.
+pub fn validate_required_flags(
+    flags: &[crate::flag::FlagDef],
+    flags_map: &HashMap<String, Option<String>>,
+) -> KoralResult<()> {
+    for flag in flags {
+        if flag.required && !flags_map.contains_key(&flag.name) {
+            return Err(KoralError::MissingArgument(format!(
+                "Required flag '--{}' is missing",
+                flag.name
+            )));
+        }
+    }
+    Ok(())
 }

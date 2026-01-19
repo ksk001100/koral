@@ -106,7 +106,9 @@ pub trait App {
 
         // Parse arguments
         let (mut flags_map, mut positionals) = {
-            let parser = crate::parser::Parser::new(self.flags()).strict(self.is_strict());
+            let parser = crate::parser::Parser::new(self.flags())
+                .strict(self.is_strict())
+                .ignore_required(true);
             // Skip argv[0] (program name)
             let args_to_parse = if !args.is_empty() {
                 &args[1..]
@@ -118,10 +120,11 @@ pub trait App {
         };
 
         let middlewares = self.middlewares();
+        let skip_middleware = help_invoked.is_some();
 
         // Execute Middleware 'before' hooks
         // We create a temporary context for BEFORE hooks
-        {
+        if !skip_middleware {
             let mut ctx = Context::new(flags_map.clone(), positionals.clone()).with_state(state);
             for mw in &middlewares {
                 mw.before(&mut ctx)?;
@@ -140,7 +143,7 @@ pub trait App {
         };
 
         // Execute Middleware 'after' hooks
-        if result.is_ok() {
+        if !skip_middleware && result.is_ok() {
             let mut ctx = Context::new(flags_map, positionals).with_state(state);
             for mw in middlewares.iter().rev() {
                 mw.after(&mut ctx)?;
@@ -191,7 +194,9 @@ pub trait App {
 
         // Parse arguments
         let (mut flags_map, mut positionals) = {
-            let parser = crate::parser::Parser::new(self.flags()).strict(self.is_strict());
+            let parser = crate::parser::Parser::new(self.flags())
+                .strict(self.is_strict())
+                .ignore_required(true);
             // Skip argv[0] (program name)
             let args_to_parse = if args.is_empty() {
                 &args[..]
@@ -203,6 +208,7 @@ pub trait App {
         };
 
         let middlewares = self.middlewares();
+        let skip_middleware = help_invoked.is_some();
 
         // Execute Middleware 'before' hooks
         // We define a dummy state for run() which has no shared state
@@ -211,7 +217,7 @@ pub trait App {
         // Wait, `with_state` takes `&mut dyn Any`.
         // If we don't have state, we just don't call `with_state`.
 
-        {
+        if !skip_middleware {
             let mut ctx = Context::new(flags_map.clone(), positionals.clone());
             for mw in &middlewares {
                 mw.before(&mut ctx)?;
@@ -227,7 +233,7 @@ pub trait App {
         };
 
         // Execute Middleware 'after' hooks
-        if result.is_ok() {
+        if !skip_middleware && result.is_ok() {
             let mut ctx = Context::new(flags_map, positionals);
             for mw in middlewares.iter().rev() {
                 mw.after(&mut ctx)?;

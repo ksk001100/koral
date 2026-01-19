@@ -103,6 +103,10 @@ pub fn impl_derive_flag(input: TokenStream) -> TokenStream {
         _ => panic!("Flag derive only supports structs"),
     };
 
+    if default_val.is_none() && _is_bool {
+        default_val = Some("false".to_string());
+    }
+
     let short_quote = match short {
         Some(c) => quote! { Some(#c) },
         None => quote! { None },
