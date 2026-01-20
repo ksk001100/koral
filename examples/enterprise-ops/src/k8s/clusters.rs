@@ -3,22 +3,37 @@ use crate::context::AppContext;
 use koral::prelude::*;
 use serde::Serialize;
 
-#[derive(Default, App)]
-#[app(name = "clusters", about = "Manage Kubernetes Clusters")]
-#[app(subcommands(ListCmd, CreateCmd, DeleteCmd, GetCmd))]
-pub struct ClustersCmd;
+#[derive(Subcommand)]
+#[subcommand(name = "clusters", about = "Manage Kubernetes Clusters")]
+#[subcommand(subcommands(ListCmd, CreateCmd, DeleteCmd, GetCmd))]
+pub enum ClustersCmd {
+    #[subcommand(name = "list")]
+    List(ListCmd),
+    #[subcommand(name = "create")]
+    Create(CreateCmd),
+    #[subcommand(name = "delete")]
+    Delete(DeleteCmd),
+    #[subcommand(name = "get")]
+    Get(GetCmd),
+}
+
+impl Default for ClustersCmd {
+    fn default() -> Self {
+        Self::List(ListCmd::default())
+    }
+}
 
 // --- List ---
 
 #[derive(Flag, Debug)]
-#[flag(name = "region", short = 'r', help = "Filter by region")]
+#[flag(name = "region", short = 'r', default = "", help = "Filter by region")]
 struct RegionFlag(String);
 
 #[derive(Default, App)]
 #[app(name = "list", about = "List all clusters")]
 #[app(flags(RegionFlag))]
 #[app(action = list_clusters)]
-struct ListCmd;
+pub struct ListCmd;
 
 #[derive(Serialize, Debug)]
 struct ClusterInfo {
@@ -116,7 +131,7 @@ struct TagsFlag(String);
 #[app(name = "create", about = "Create a new cluster")]
 #[app(flags(NameFlag, VersionFlag, NodeCountFlag, TagsFlag))]
 #[app(action = create_cluster)]
-struct CreateCmd;
+pub struct CreateCmd;
 
 fn create_cluster(
     ctx: State<AppContext>,
@@ -153,7 +168,7 @@ fn create_cluster(
 #[app(name = "delete", about = "Delete a cluster")]
 #[app(flags(NameFlag))]
 #[app(action = delete_cluster)]
-struct DeleteCmd;
+pub struct DeleteCmd;
 
 fn delete_cluster(ctx: State<AppContext>, name: FlagArg<NameFlag>) -> KoralResult<()> {
     ctx.client
@@ -171,7 +186,7 @@ fn delete_cluster(ctx: State<AppContext>, name: FlagArg<NameFlag>) -> KoralResul
 #[app(name = "get", about = "Get cluster details")]
 #[app(flags(NameFlag))]
 #[app(action = get_cluster)]
-struct GetCmd;
+pub struct GetCmd;
 
 fn get_cluster(ctx: State<AppContext>, name: FlagArg<NameFlag>) -> KoralResult<()> {
     ctx.client.log_request(&format!("Get cluster {}", *name));

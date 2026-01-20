@@ -3,10 +3,23 @@ use crate::context::AppContext;
 use koral::prelude::*;
 use serde::Serialize;
 
-#[derive(Default, App)]
-#[app(name = "nodepools", about = "Manage Node Pools within a cluster")]
-#[app(subcommands(ListPoolsCmd, CreatePoolCmd, ScalePoolCmd))]
-pub struct NodePoolsCmd;
+#[derive(Subcommand)]
+#[subcommand(name = "nodepools", about = "Manage Node Pools within a cluster")]
+#[subcommand(subcommands(ListPoolsCmd, CreatePoolCmd, ScalePoolCmd))]
+pub enum NodePoolsCmd {
+    #[subcommand(name = "list")]
+    List(ListPoolsCmd),
+    #[subcommand(name = "create")]
+    Create(CreatePoolCmd),
+    #[subcommand(name = "scale")]
+    Scale(ScalePoolCmd),
+}
+
+impl Default for NodePoolsCmd {
+    fn default() -> Self {
+        Self::List(ListPoolsCmd::default())
+    }
+}
 
 // Shared Flags
 #[derive(Flag, Debug)]
@@ -23,7 +36,7 @@ struct PoolFlag(String);
 #[app(name = "list", about = "List node pools")]
 #[app(flags(ClusterFlag))]
 #[app(action = list_pools)]
-struct ListPoolsCmd;
+pub struct ListPoolsCmd;
 
 #[derive(Serialize, Debug)]
 struct PoolInfo {
@@ -83,7 +96,7 @@ struct LabelsFlag(String);
     LabelsFlag
 ))]
 #[app(action = create_pool)]
-struct CreatePoolCmd;
+pub struct CreatePoolCmd;
 
 fn create_pool(
     ctx: State<AppContext>,
@@ -110,7 +123,7 @@ struct ReplicasFlag(u32);
 #[app(name = "scale", about = "Resize a node pool")]
 #[app(flags(ClusterFlag, PoolFlag, ReplicasFlag))]
 #[app(action = scale_pool)]
-struct ScalePoolCmd;
+pub struct ScalePoolCmd;
 
 fn scale_pool(
     ctx: State<AppContext>,

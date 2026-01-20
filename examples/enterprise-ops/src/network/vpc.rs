@@ -3,10 +3,23 @@ use crate::context::AppContext;
 use koral::prelude::*;
 use serde::Serialize;
 
-#[derive(Default, App)]
-#[app(name = "vpc", about = "Manage Virtual Private Clouds")]
-#[app(subcommands(ListVpcCmd, CreateVpcCmd, PeeringCmd))]
-pub struct VpcCmd;
+#[derive(Subcommand)]
+#[subcommand(name = "vpc", about = "Manage Virtual Private Clouds")]
+#[subcommand(subcommands(ListVpcCmd, CreateVpcCmd, PeeringCmd))]
+pub enum VpcCmd {
+    #[subcommand(name = "list")]
+    List(ListVpcCmd),
+    #[subcommand(name = "create")]
+    Create(CreateVpcCmd),
+    #[subcommand(name = "peering")]
+    Peering(PeeringCmd),
+}
+
+impl Default for VpcCmd {
+    fn default() -> Self {
+        Self::List(ListVpcCmd::default())
+    }
+}
 
 #[derive(Serialize, Debug)]
 struct Vpc {
@@ -18,7 +31,7 @@ struct Vpc {
 #[derive(Default, App)]
 #[app(name = "list")]
 #[app(action = list_vpcs)]
-struct ListVpcCmd;
+pub struct ListVpcCmd;
 
 fn list_vpcs(ctx: State<AppContext>) -> KoralResult<()> {
     let vpcs = vec![
@@ -45,7 +58,7 @@ struct CidrFlag(String);
 #[app(name = "create")]
 #[app(flags(CidrFlag))]
 #[app(action = create_vpc)]
-struct CreateVpcCmd;
+pub struct CreateVpcCmd;
 
 fn create_vpc(_ctx: State<AppContext>, cidr: FlagArg<CidrFlag>) -> KoralResult<()> {
     println!("Creating VPC with CIDR {}...", *cidr);
@@ -54,10 +67,19 @@ fn create_vpc(_ctx: State<AppContext>, cidr: FlagArg<CidrFlag>) -> KoralResult<(
 
 // --- Nested Peering ---
 
-#[derive(Default, App)]
-#[app(name = "peering", about = "VPC Peering Connections")]
-#[app(subcommands(CreatePeerCmd))]
-struct PeeringCmd;
+#[derive(Subcommand)]
+#[subcommand(name = "peering", about = "VPC Peering Connections")]
+#[subcommand(subcommands(CreatePeerCmd))]
+pub enum PeeringCmd {
+    #[subcommand(name = "create")]
+    Create(CreatePeerCmd),
+}
+
+impl Default for PeeringCmd {
+    fn default() -> Self {
+        Self::Create(CreatePeerCmd::default())
+    }
+}
 
 #[derive(Flag, Debug)]
 #[flag(name = "vpc-id", required = true)]
@@ -71,7 +93,7 @@ struct PeerVpcIdFlag(String);
 #[app(name = "create")]
 #[app(flags(VpcIdFlag, PeerVpcIdFlag))]
 #[app(action = create_peer)]
-struct CreatePeerCmd;
+pub struct CreatePeerCmd;
 
 fn create_peer(
     _ctx: State<AppContext>,

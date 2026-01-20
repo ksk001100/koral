@@ -3,10 +3,21 @@ use crate::context::AppContext;
 use koral::prelude::*;
 use serde::Serialize;
 
-#[derive(Default, App)]
-#[app(name = "pipelines", about = "Manage Pipelines")]
-#[app(subcommands(ListPipelinesCmd, RunPipelineCmd))]
-pub struct PipelinesCmd;
+#[derive(Subcommand)]
+#[subcommand(name = "pipelines", about = "Manage Pipelines")]
+#[subcommand(subcommands(ListPipelinesCmd, RunPipelineCmd))]
+pub enum PipelinesCmd {
+    #[subcommand(name = "list")]
+    List(ListPipelinesCmd),
+    #[subcommand(name = "run")]
+    Run(RunPipelineCmd),
+}
+
+impl Default for PipelinesCmd {
+    fn default() -> Self {
+        Self::List(ListPipelinesCmd::default())
+    }
+}
 
 #[derive(Serialize, Debug)]
 struct Pipeline {
@@ -18,7 +29,7 @@ struct Pipeline {
 #[derive(Default, App)]
 #[app(name = "list")]
 #[app(action = list_pipelines)]
-struct ListPipelinesCmd;
+pub struct ListPipelinesCmd;
 
 fn list_pipelines(ctx: State<AppContext>) -> KoralResult<()> {
     let pipes = vec![
@@ -49,7 +60,7 @@ struct BranchFlag(String);
 #[app(name = "run")]
 #[app(flags(IdFlag, BranchFlag))]
 #[app(action = run_pipeline)]
-struct RunPipelineCmd;
+pub struct RunPipelineCmd;
 
 fn run_pipeline(
     _ctx: State<AppContext>,

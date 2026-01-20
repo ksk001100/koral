@@ -1,10 +1,19 @@
 use crate::context::AppContext;
 use koral::prelude::*;
 
-#[derive(Default, App)]
-#[app(name = "logs", about = "Search global logs")]
-#[app(subcommands(SearchLogsCmd))]
-pub struct LogsCmd;
+#[derive(Subcommand)]
+#[subcommand(name = "logs", about = "Search global logs")]
+#[subcommand(subcommands(SearchLogsCmd))]
+pub enum LogsCmd {
+    #[subcommand(name = "search")]
+    Search(SearchLogsCmd),
+}
+
+impl Default for LogsCmd {
+    fn default() -> Self {
+        Self::Search(SearchLogsCmd::default())
+    }
+}
 
 #[derive(Flag, Debug)]
 #[flag(name = "query", required = true, help = "LogQL Query")]
@@ -18,7 +27,7 @@ struct LimitFlag(u32);
 #[app(name = "search")]
 #[app(flags(LogQueryFlag, LimitFlag))]
 #[app(action = search_logs)]
-struct SearchLogsCmd;
+pub struct SearchLogsCmd;
 
 fn search_logs(
     _ctx: State<AppContext>,

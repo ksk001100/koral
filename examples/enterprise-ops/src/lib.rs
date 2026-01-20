@@ -59,6 +59,39 @@ impl Middleware for AuthMiddleware {
     }
 }
 
+// --- Commands ---
+
+#[derive(Subcommand)]
+#[subcommand(name = "ops", about = "Available commands")]
+#[subcommand(subcommands(
+    k8s::K8sCmd,
+    db::DbCmd,
+    cicd::CicdCmd,
+    monitor::MonitorCmd,
+    iam::IamCmd,
+    network::NetworkCmd
+))]
+pub enum OpsCmds {
+    #[subcommand(name = "k8s")]
+    K8s(k8s::K8sCmd),
+    #[subcommand(name = "db")]
+    Db(db::DbCmd),
+    #[subcommand(name = "cicd")]
+    Cicd(cicd::CicdCmd),
+    #[subcommand(name = "monitor")]
+    Monitor(monitor::MonitorCmd),
+    #[subcommand(name = "iam")]
+    Iam(iam::IamCmd),
+    #[subcommand(name = "network")]
+    Network(network::NetworkCmd),
+}
+
+impl Default for OpsCmds {
+    fn default() -> Self {
+        Self::K8s(k8s::K8sCmd::default())
+    }
+}
+
 #[derive(App, Default)]
 #[app(
     name = "ops",
@@ -67,13 +100,8 @@ impl Middleware for AuthMiddleware {
     about = "Enterprise Platform CLI"
 )]
 #[app(flags(Verbose, DryRun, Output, ProfileFlag))]
-#[app(subcommands(
-    k8s::K8sCmd,
-    db::DbCmd,
-    cicd::CicdCmd,
-    monitor::MonitorCmd,
-    iam::IamCmd,
-    network::NetworkCmd
-))]
 #[app(middleware(AuthMiddleware))]
-pub struct OpsApp;
+pub struct OpsApp {
+    #[app(subcommand)]
+    pub cmd: OpsCmds,
+}

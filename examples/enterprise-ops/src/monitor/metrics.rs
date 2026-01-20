@@ -1,21 +1,32 @@
 use crate::context::AppContext;
 use koral::prelude::*;
 
-#[derive(Default, App)]
-#[app(name = "metrics", about = "Query metrics")]
-#[app(subcommands(QueryCmd, DashboardCmd))]
-pub struct MetricsCmd;
+#[derive(Subcommand)]
+#[subcommand(name = "metrics", about = "Query metrics")]
+#[subcommand(subcommands(QueryCmd, DashboardCmd))]
+pub enum MetricsCmd {
+    #[subcommand(name = "query")]
+    Query(QueryCmd),
+    #[subcommand(name = "dashboard")]
+    Dashboard(DashboardCmd),
+}
+
+impl Default for MetricsCmd {
+    fn default() -> Self {
+        Self::Query(QueryCmd::default())
+    }
+}
 
 #[derive(Flag, Debug)]
 #[flag(name = "query", required = true, help = "PromQL Query")]
 struct QueryFlag(String);
 
 #[derive(Flag, Debug)]
-#[flag(name = "start", help = "Start time (RFC3339)")]
+#[flag(name = "start", default = "", help = "Start time (RFC3339)")]
 struct StartTimeFlag(String);
 
 #[derive(Flag, Debug)]
-#[flag(name = "end", help = "End time (RFC3339)")]
+#[flag(name = "end", default = "", help = "End time (RFC3339)")]
 struct EndTimeFlag(String);
 
 #[derive(Flag, Debug)]
@@ -26,7 +37,7 @@ struct StepFlag(String);
 #[app(name = "query", about = "Run a PromQL query")]
 #[app(flags(QueryFlag, StartTimeFlag, EndTimeFlag, StepFlag))]
 #[app(action = query_metrics)]
-struct QueryCmd;
+pub struct QueryCmd;
 
 fn query_metrics(
     ctx: State<AppContext>,
@@ -65,7 +76,7 @@ struct DashboardIdFlag(String);
 #[app(name = "dashboard", about = "Open a dashboard URL")]
 #[app(flags(DashboardIdFlag))]
 #[app(action = open_dashboard)]
-struct DashboardCmd;
+pub struct DashboardCmd;
 
 fn open_dashboard(_ctx: State<AppContext>, id: FlagArg<DashboardIdFlag>) -> KoralResult<()> {
     println!("Opening dashboard: https://grafana.internal/d/{}", *id);

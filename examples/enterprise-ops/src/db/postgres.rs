@@ -3,17 +3,30 @@ use crate::context::AppContext;
 use koral::prelude::*;
 use serde::Serialize;
 
-#[derive(Default, App)]
-#[app(name = "postgres", about = "Manage Postgres instances")]
-#[app(subcommands(ListInstancesCmd, CreateInstanceCmd, BackupsCmd))]
-pub struct PostgresCmd;
+#[derive(Subcommand)]
+#[subcommand(name = "postgres", about = "Manage Postgres instances")]
+#[subcommand(subcommands(ListInstancesCmd, CreateInstanceCmd, BackupsCmd))]
+pub enum PostgresCmd {
+    #[subcommand(name = "list")]
+    List(ListInstancesCmd),
+    #[subcommand(name = "create")]
+    Create(CreateInstanceCmd),
+    #[subcommand(name = "backups")]
+    Backups(BackupsCmd),
+}
+
+impl Default for PostgresCmd {
+    fn default() -> Self {
+        Self::List(ListInstancesCmd::default())
+    }
+}
 
 // --- List ---
 
 #[derive(Default, App)]
 #[app(name = "list", about = "List instances")]
 #[app(action = list_db_instances)]
-struct ListInstancesCmd;
+pub struct ListInstancesCmd;
 
 #[derive(Serialize, Debug)]
 struct DbInstance {
@@ -57,7 +70,7 @@ struct StorageFlag(u32);
 #[app(name = "create", about = "Provision new postgres instance")]
 #[app(flags(NameFlag, StorageFlag))]
 #[app(action = create_db)]
-struct CreateInstanceCmd;
+pub struct CreateInstanceCmd;
 
 fn create_db(
     _ctx: State<AppContext>,
@@ -73,16 +86,27 @@ fn create_db(
 
 // --- Backups (Nested Subcommand) ---
 
-#[derive(Default, App)]
-#[app(name = "backups", about = "Manage database backups")]
-#[app(subcommands(ListBackups, CreateBackup))]
-struct BackupsCmd;
+#[derive(Subcommand)]
+#[subcommand(name = "backups", about = "Manage database backups")]
+#[subcommand(subcommands(ListBackups, CreateBackup))]
+pub enum BackupsCmd {
+    #[subcommand(name = "list")]
+    List(ListBackups),
+    #[subcommand(name = "create")]
+    Create(CreateBackup),
+}
+
+impl Default for BackupsCmd {
+    fn default() -> Self {
+        Self::List(ListBackups::default())
+    }
+}
 
 #[derive(Default, App)]
 #[app(name = "list")]
 #[app(flags(NameFlag))]
 #[app(action = list_backups)]
-struct ListBackups;
+pub struct ListBackups;
 
 fn list_backups(_ctx: State<AppContext>, db_name: FlagArg<NameFlag>) -> KoralResult<()> {
     println!("Backups for {}:", *db_name);
@@ -95,7 +119,7 @@ fn list_backups(_ctx: State<AppContext>, db_name: FlagArg<NameFlag>) -> KoralRes
 #[app(name = "create")]
 #[app(flags(NameFlag))]
 #[app(action = create_backup)]
-struct CreateBackup;
+pub struct CreateBackup;
 
 fn create_backup(_ctx: State<AppContext>, db_name: FlagArg<NameFlag>) -> KoralResult<()> {
     println!("Starting backup for {}...", *db_name);

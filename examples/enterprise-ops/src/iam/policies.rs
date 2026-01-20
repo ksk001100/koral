@@ -1,10 +1,19 @@
 use crate::context::AppContext;
 use koral::prelude::*;
 
-#[derive(Default, App)]
-#[app(name = "policies", about = "Manage IAM Policies")]
-#[app(subcommands(ValidatePolicyCmd))]
-pub struct PoliciesCmd;
+#[derive(Subcommand)]
+#[subcommand(name = "policies", about = "Manage IAM Policies")]
+#[subcommand(subcommands(ValidatePolicyCmd))]
+pub enum PoliciesCmd {
+    #[subcommand(name = "validate")]
+    Validate(ValidatePolicyCmd),
+}
+
+impl Default for PoliciesCmd {
+    fn default() -> Self {
+        Self::Validate(ValidatePolicyCmd::default())
+    }
+}
 
 #[derive(Flag, Debug)]
 #[flag(name = "file", required = true)]
@@ -14,7 +23,7 @@ struct FileFlag(String);
 #[app(name = "validate")]
 #[app(flags(FileFlag))]
 #[app(action = validate_policy)]
-struct ValidatePolicyCmd;
+pub struct ValidatePolicyCmd;
 
 fn validate_policy(_ctx: State<AppContext>, file: FlagArg<FileFlag>) -> KoralResult<()> {
     println!("Validating policy file '{}'...", *file);

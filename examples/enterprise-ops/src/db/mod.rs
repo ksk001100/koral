@@ -10,3 +10,9 @@ pub enum DbCmd {
     Postgres(postgres::PostgresCmd),
     Redis(redis::RedisCmd),
 }
+
+impl Default for DbCmd {
+    fn default() -> Self {
+        Self::Postgres(postgres::PostgresCmd::default())
+    }
+}

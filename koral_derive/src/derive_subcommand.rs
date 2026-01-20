@@ -98,10 +98,18 @@ pub fn impl_derive_subcommand(input: TokenStream) -> TokenStream {
 
                 // App delegators
                 run_arms.push(quote! {
-                    Self::#variant_name(cmd) => cmd.run(args),
+                    Self::#variant_name(cmd) => {
+                        let mut passed_args = vec![#cmd_name.to_string()];
+                        passed_args.extend(next_args);
+                        cmd.run(passed_args)
+                    },
                 });
                 run_state_arms.push(quote! {
-                    Self::#variant_name(cmd) => cmd.run_with_state(state, args),
+                    Self::#variant_name(cmd) => {
+                        let mut passed_args = vec![#cmd_name.to_string()];
+                        passed_args.extend(next_args);
+                        cmd.run_with_state(state, passed_args)
+                    },
                 });
                 execute_arms.push(quote! {
                     Self::#variant_name(cmd) => cmd.execute(ctx),
@@ -124,6 +132,39 @@ pub fn impl_derive_subcommand(input: TokenStream) -> TokenStream {
         cmd_defs.push(quote! {
             koral::internal::command::CommandDef::new(#cmd_name, "").with_aliases(vec![#(#aliases.to_string()),*]),
         });
+    }
+
+    // Parse Enum attributes for name and about
+    let mut app_name = name.to_string().to_lowercase();
+    let mut app_about = "".to_string();
+
+    for attr in input.attrs {
+        if attr.path().is_ident("subcommand") {
+            let nested = attr
+                .parse_args_with(
+                    syn::punctuated::Punctuated::<syn::Meta, syn::Token![,]>::parse_terminated,
+                )
+                .ok();
+            if let Some(nested_meta) = nested {
+                for meta in nested_meta {
+                    if let Meta::NameValue(nv) = meta {
+                        if nv.path.is_ident("name") {
+                            if let Expr::Lit(expr_lit) = nv.value {
+                                if let Lit::Str(lit) = expr_lit.lit {
+                                    app_name = lit.value();
+                                }
+                            }
+                        } else if nv.path.is_ident("about") || nv.path.is_ident("description") {
+                            if let Expr::Lit(expr_lit) = nv.value {
+                                if let Lit::Str(lit) = expr_lit.lit {
+                                    app_about = lit.value();
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     let expanded = quote! {
@@ -149,9 +190,11 @@ pub fn impl_derive_subcommand(input: TokenStream) -> TokenStream {
 
         impl koral::traits::App for #name {
             fn name(&self) -> &str {
-                match self {
-                    #(#name_arms)*
-                }
+                #app_name
+            }
+
+            fn description(&self) -> &str {
+                #app_about
             }
 
             fn execute(&mut self, ctx: koral::Context) -> koral::KoralResult<()> {
@@ -161,35 +204,84 @@ pub fn impl_derive_subcommand(input: TokenStream) -> TokenStream {
             }
 
             fn run(&mut self, args: Vec<String>) -> koral::KoralResult<()> {
+                // Check if help is requested for THIS command (the Group)
+                // args logic similar to App trait default run
+                let help_invoked = args.iter().position(|a| a == "--help" || a == "-h");
+                if let Some(h_idx) = help_invoked {
+                    // If help is invoked, check if it targets a subcommand
+                    // subcommands() returns the list of variants
+                    let subcommands = self.subcommands();
+                    // Don't skip args[0], as it might be the variant name itself (e.g. "k8s")
+                    let sub_idx = args.iter().enumerate().find_map(|(i, arg)| {
+                        if subcommands.iter().any(|s| s.name == *arg || s.aliases.contains(arg)) {
+                            Some(i)
+                        } else {
+                            None
+                        }
+                    });
+
+                    let should_print_help = match sub_idx {
+                        Some(s_idx) => h_idx < s_idx,
+                        None => true,
+                    };
+
+                    if should_print_help {
+                        self.print_help();
+                        return Ok(());
+                    }
+                }
+
+                let next_args = if !args.is_empty() {
+                    args[1..].to_vec()
+                } else {
+                    vec![]
+                };
                 match self {
                     #(#run_arms)*
                 }
             }
 
             fn run_with_state(&mut self, state: &mut dyn std::any::Any, args: Vec<String>) -> koral::KoralResult<()> {
+                // Same help logic as run
+                let help_invoked = args.iter().position(|a| a == "--help" || a == "-h");
+                if let Some(h_idx) = help_invoked {
+                    let subcommands = self.subcommands();
+                     let sub_idx = args.iter().enumerate().find_map(|(i, arg)| {
+                        if subcommands.iter().any(|s| s.name == *arg || s.aliases.contains(arg)) {
+                            Some(i)
+                        } else {
+                            None
+                        }
+                    });
+
+                    let should_print_help = match sub_idx {
+                        Some(s_idx) => h_idx < s_idx,
+                        None => true,
+                    };
+
+                    if should_print_help {
+                        self.print_help();
+                        return Ok(());
+                    }
+                }
+
+                let next_args = if !args.is_empty() {
+                    args[1..].to_vec()
+                } else {
+                    vec![]
+                };
                 match self {
                     #(#run_state_arms)*
                 }
             }
 
             fn subcommands(&self) -> Vec<koral::internal::command::CommandDef> {
-               // Usually static list of all possible subcommands
-               /*
-                  Note: This method is used for help generation of the *Enum itself*?
-                  Or is it simply delegating?
-                  If this Enum is a field in ParentApp, ParentApp calls `get_subcommands()` from `FromArgs`.
-
-                  If we treat this Enum as the App itself, `subcommands()` should probably return all variants?
-                  Same as `FromArgs::get_subcommands()`.
-               */
                <Self as koral::traits::FromArgs>::get_subcommands()
             }
 
             fn flags(&self) -> Vec<koral::internal::flag::FlagDef> {
-                // Return flags of the active variant?
-                match self {
-                    #(#flag_arms)*
-                }
+                // Return empty flags for Enum itself (it's a container)
+                vec![]
             }
         }
     };

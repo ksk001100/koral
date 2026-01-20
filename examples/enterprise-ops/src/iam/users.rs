@@ -3,10 +3,21 @@ use crate::context::AppContext;
 use koral::prelude::*;
 use serde::Serialize;
 
-#[derive(Default, App)]
-#[app(name = "users", about = "Manage Users")]
-#[app(subcommands(ListUsersCmd, InviteCmd))]
-pub struct UsersCmd;
+#[derive(Subcommand)]
+#[subcommand(name = "users", about = "Manage Users")]
+#[subcommand(subcommands(ListUsersCmd, InviteCmd))]
+pub enum UsersCmd {
+    #[subcommand(name = "list")]
+    List(ListUsersCmd),
+    #[subcommand(name = "invite")]
+    Invite(InviteCmd),
+}
+
+impl Default for UsersCmd {
+    fn default() -> Self {
+        Self::List(ListUsersCmd::default())
+    }
+}
 
 #[derive(Serialize, Debug)]
 struct User {
@@ -18,7 +29,7 @@ struct User {
 #[derive(Default, App)]
 #[app(name = "list")]
 #[app(action = list_users)]
-struct ListUsersCmd;
+pub struct ListUsersCmd;
 
 fn list_users(ctx: State<AppContext>) -> KoralResult<()> {
     let users = vec![
@@ -49,7 +60,7 @@ struct RoleFlag(String);
 #[app(name = "invite")]
 #[app(flags(EmailFlag, RoleFlag))]
 #[app(action = invite_user)]
-struct InviteCmd;
+pub struct InviteCmd;
 
 fn invite_user(
     _ctx: State<AppContext>,

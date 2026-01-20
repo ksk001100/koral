@@ -42,10 +42,25 @@ where
     fn from_context(ctx: &'a Context) -> KoralResult<Self> {
         match ctx.get::<F>() {
             Some(v) => Ok(FlagVal(v)),
-            None => Err(crate::KoralError::MissingArgument(format!(
-                "Flag '{}' not found",
-                F::name()
-            ))),
+            None => {
+                println!(
+                    "DEBUG: Flag {} not found in context. Checking default...",
+                    F::name()
+                );
+                match F::default_value() {
+                    Some(v) => {
+                        println!("DEBUG: Found default value");
+                        Ok(FlagVal(v))
+                    }
+                    None => {
+                        println!("DEBUG: No default value for {}", F::name());
+                        Err(crate::KoralError::MissingArgument(format!(
+                            "Flag '{}' not found",
+                            F::name()
+                        )))
+                    }
+                }
+            }
         }
     }
 }

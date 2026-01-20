@@ -4,10 +4,23 @@ use koral::prelude::*;
 use serde::Serialize;
 use std::{thread, time::Duration};
 
-#[derive(Default, App)]
-#[app(name = "workloads", about = "Inspect workloads (pods, deployments)")]
-#[app(subcommands(ListWorkloadsCmd, LogsCmd, ExecCmd))]
-pub struct WorkloadsCmd;
+#[derive(Subcommand)]
+#[subcommand(name = "workloads", about = "Inspect workloads (pods, deployments)")]
+#[subcommand(subcommands(ListWorkloadsCmd, LogsCmd, ExecCmd))]
+pub enum WorkloadsCmd {
+    #[subcommand(name = "list")]
+    List(ListWorkloadsCmd),
+    #[subcommand(name = "logs")]
+    Logs(LogsCmd),
+    #[subcommand(name = "exec")]
+    Exec(ExecCmd),
+}
+
+impl Default for WorkloadsCmd {
+    fn default() -> Self {
+        Self::List(ListWorkloadsCmd::default())
+    }
+}
 
 #[derive(Flag, Debug)]
 #[flag(
@@ -28,7 +41,7 @@ struct PodFlag(String);
 #[app(name = "list", about = "List workloads in a namespace")]
 #[app(flags(NamespaceFlag))]
 #[app(action = list_workloads)]
-struct ListWorkloadsCmd;
+pub struct ListWorkloadsCmd;
 
 #[derive(Serialize, Debug)]
 struct PodInfo {
@@ -73,7 +86,7 @@ struct TailFlag(u32);
 #[app(name = "logs", about = "Get pod logs")]
 #[app(flags(NamespaceFlag, PodFlag, FollowFlag, TailFlag))]
 #[app(action = get_logs)]
-struct LogsCmd;
+pub struct LogsCmd;
 
 fn get_logs(
     _ctx: State<AppContext>,
@@ -113,7 +126,7 @@ struct CommandFlag(String);
 #[app(flags(NamespaceFlag, PodFlag, ContainerFlag, CommandFlag))]
 #[app(strict = false)] // Allow args after -- to be passed
 #[app(action = exec_pod)]
-struct ExecCmd;
+pub struct ExecCmd;
 
 fn exec_pod(
     ctx: State<AppContext>,

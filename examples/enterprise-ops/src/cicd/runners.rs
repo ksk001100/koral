@@ -1,10 +1,19 @@
 use crate::context::AppContext;
 use koral::prelude::*;
 
-#[derive(Default, App)]
-#[app(name = "runners", about = "Self-hosted runners")]
-#[app(subcommands(RegisterRunnerCmd))]
-pub struct RunnersCmd;
+#[derive(Subcommand)]
+#[subcommand(name = "runners", about = "Self-hosted runners")]
+#[subcommand(subcommands(RegisterRunnerCmd))]
+pub enum RunnersCmd {
+    #[subcommand(name = "register")]
+    Register(RegisterRunnerCmd),
+}
+
+impl Default for RunnersCmd {
+    fn default() -> Self {
+        Self::Register(RegisterRunnerCmd::default())
+    }
+}
 
 #[derive(Flag, Debug)]
 #[flag(name = "token", required = true, env = "RUNNER_TOKEN")]
@@ -18,7 +27,7 @@ struct TagsFlag(String);
 #[app(name = "register")]
 #[app(flags(TokenFlag, TagsFlag))]
 #[app(action = register_runner)]
-struct RegisterRunnerCmd;
+pub struct RegisterRunnerCmd;
 
 fn register_runner(
     _ctx: State<AppContext>,

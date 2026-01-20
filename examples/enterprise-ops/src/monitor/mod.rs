@@ -10,3 +10,9 @@ pub enum MonitorCmd {
     Metrics(metrics::MetricsCmd),
     Logs(logs::LogsCmd),
 }
+
+impl Default for MonitorCmd {
+    fn default() -> Self {
+        Self::Metrics(metrics::MetricsCmd::default())
+    }
+}
