@@ -8,6 +8,4 @@ It shows how to define a simple application.
 ```bash
 # Run the application
 cargo run -p hello-world
-
-cargo run -p hello-world -- Koral
 ```
