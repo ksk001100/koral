@@ -22,6 +22,12 @@ impl Middleware for TimingMiddleware {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct User {
+    pub name: String,
+    pub role: String,
+}
+
 // Configurable Middleware (Injected)
 #[derive(Clone)]
 pub struct AuthMiddleware {
@@ -29,8 +35,14 @@ pub struct AuthMiddleware {
 }
 
 impl Middleware for AuthMiddleware {
-    fn before(&self, _ctx: &mut Context) -> KoralResult<()> {
+    fn before(&self, ctx: &mut Context) -> KoralResult<()> {
         println!("[AuthMiddleware] Checking API Key: {}", self.api_key);
+        // Simulate authentication and user resolution
+        let user = User {
+            name: "Alice".to_string(),
+            role: "Admin".to_string(),
+        };
+        ctx.insert_extension(user);
         Ok(())
     }
 }

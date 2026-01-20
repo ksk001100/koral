@@ -284,7 +284,7 @@ pub mod prelude {
     pub use crate::command::CommandDef;
     pub use crate::context::Context;
     pub use crate::error::{KoralError, KoralResult};
-    pub use crate::extract::{Args, FlagVal as FlagArg, FromContext, State};
+    pub use crate::extract::{Args, Extension, FlagVal as FlagArg, FromContext, State};
     pub use crate::flag::{Flag, FlagDef};
     pub use crate::middleware::Middleware;
     pub use crate::traits::{App as AppTrait, FlagValue, FromArgs};
@@ -296,7 +296,7 @@ pub use command::CommandDef;
 pub use completion::{generate_to, Shell};
 pub use context::Context;
 pub use error::{KoralError, KoralResult};
-pub use extract::{Args, FlagVal as FlagArg, FromContext, State};
+pub use extract::{Args, Extension, FlagVal as FlagArg, FromContext, State};
 pub use flag::{Flag, FlagDef};
 pub use koral_derive::{App, Flag, FlagValue, Subcommand};
 pub use middleware::Middleware;

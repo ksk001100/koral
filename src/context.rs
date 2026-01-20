@@ -1,10 +1,10 @@
 use crate::traits::FlagValue;
-use std::any::Any;
+use std::any::{Any, TypeId};
 use std::collections::HashMap;
 
 /// Result of parsing command line arguments.
 /// Result of parsing command line arguments.
-#[derive(Debug, Default)]
+/// Reference to the shared state (e.g. TodoApp or TodoState).
 pub struct Context<'a, A: ?Sized = dyn Any> {
     /// Parsed flag values. Key is the flag name.
     /// Value is the string representation of the value, or empty string for boolean flags.
@@ -18,6 +18,9 @@ pub struct Context<'a, A: ?Sized = dyn Any> {
 
     /// Reference to the shared state (e.g. TodoApp or TodoState).
     pub state: Option<&'a mut dyn Any>,
+
+    /// Type-safe extensions map for middleware to inject data.
+    pub extensions: HashMap<TypeId, Box<dyn Any + Send + Sync>>,
 }
 
 use crate::flag::Flag;
@@ -30,6 +33,7 @@ impl<'a, A: ?Sized> Context<'a, A> {
             args,
             app: None,
             state: None,
+            extensions: HashMap::new(),
         }
     }
 
@@ -108,6 +112,42 @@ impl<'a, A: ?Sized> Context<'a, A> {
             None
         }
     }
+
+    /// Insert an extension into the context.
+    pub fn insert_extension<T: Any + Send + Sync>(&mut self, val: T) {
+        self.extensions.insert(TypeId::of::<T>(), Box::new(val));
+    }
+
+    /// Get a reference to an extension.
+    pub fn get_extension<T: Any + Send + Sync>(&self) -> Option<&T> {
+        self.extensions
+            .get(&TypeId::of::<T>())
+            .and_then(|boxed| boxed.downcast_ref())
+    }
+
+    /// Get a mutable reference to an extension.
+    pub fn get_extension_mut<T: Any + Send + Sync>(&mut self) -> Option<&mut T> {
+        self.extensions
+            .get_mut(&TypeId::of::<T>())
+            .and_then(|boxed| boxed.downcast_mut())
+    }
+
+    /// Remove an extension from the context.
+    pub fn remove_extension<T: Any + Send + Sync>(&mut self) -> Option<T> {
+        self.extensions
+            .remove(&TypeId::of::<T>())
+            .and_then(|boxed| boxed.downcast::<T>().ok())
+            .map(|boxed| *boxed)
+    }
+
+    /// Set the extensions map (used internally).
+    pub fn with_extensions(
+        mut self,
+        extensions: HashMap<TypeId, Box<dyn Any + Send + Sync>>,
+    ) -> Self {
+        self.extensions = extensions;
+        self
+    }
 }
 
 // Helpers for dynamic context (Context<'a, dyn Any>)
@@ -127,6 +167,30 @@ impl<'a> Context<'a, dyn Any> {
             a.downcast_mut::<T>()
         } else {
             None
+        }
+    }
+}
+
+impl<'a, A: ?Sized> std::fmt::Debug for Context<'a, A> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Context")
+            .field("flags", &self.flags)
+            .field("args", &self.args)
+            .field("app", &"...")
+            .field("state", &"...")
+            .field("extensions", &self.extensions.keys())
+            .finish()
+    }
+}
+
+impl<'a, A: ?Sized> Default for Context<'a, A> {
+    fn default() -> Self {
+        Self {
+            flags: HashMap::new(),
+            args: Vec::new(),
+            app: None,
+            state: None,
+            extensions: HashMap::new(),
         }
     }
 }

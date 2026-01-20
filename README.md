@@ -44,3 +44,4 @@ cargo add --git https://github.com/ksk001100/koral
 | [`todo-app`](examples/todo-app) | Full application with subcommands and state | `cargo run -p todo-app` |
 | [`sys-monitor`](examples/sys-monitor) | Features showcase (DI, Middleware, etc.) | `cargo run -p sys-monitor` |
 | [`kv-store`](examples/kv-store) | Key-Value store with persistence | `cargo run -p kv-store` |
+| [`cloud-cli`](examples/cloud-cli) | Comprehensive Cloud CLI Simulation | `cargo run -p cloud-cli` |

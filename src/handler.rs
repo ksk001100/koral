@@ -41,6 +41,7 @@ where
             flags: ctx.flags,
             args: ctx.args,
             state: ctx.state,
+            extensions: ctx.extensions,
             app: Some(app),
         };
         (self)(typed_ctx)

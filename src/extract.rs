@@ -130,3 +130,26 @@ mod tests {
         assert!(res.is_none());
     }
 }
+
+/// Extractor for extensions.
+pub struct Extension<T>(pub T);
+
+impl<T> Deref for Extension<T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl<'a, T: Clone + Send + Sync + 'static> FromContext<'a> for Extension<T> {
+    fn from_context(ctx: &'a Context) -> KoralResult<Self> {
+        match ctx.get_extension::<T>() {
+            Some(v) => Ok(Extension(v.clone())),
+            None => Err(crate::KoralError::MissingArgument(format!(
+                "Extension of type '{}' not found",
+                std::any::type_name::<T>()
+            ))),
+        }
+    }
+}

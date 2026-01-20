@@ -6,7 +6,7 @@ mod middleware;
 mod state;
 
 use crate::commands::Commands;
-use crate::middleware::{AuthMiddleware, TimingMiddleware};
+use crate::middleware::{AuthMiddleware, TimingMiddleware, User};
 use crate::state::AppState;
 
 #[derive(Flag, Debug)]
@@ -33,7 +33,8 @@ struct MyApp {
 fn main_handler(
     state: State<AppState>,
     verbose: FlagArg<VerboseFlag>,
-    user: FlagArg<UserFlag>,
+    user_flag: FlagArg<UserFlag>,
+    user_ext: Extension<User>,
     args: Args,
 ) -> KoralResult<()> {
     if verbose.0 {
@@ -47,7 +48,8 @@ fn main_handler(
         println!("Counter incremented to {}", *cnt);
     }
 
-    println!("Hello, {}!", user.0);
+    println!("Hello, {} (Role: {})!", user_flag.0, user_ext.role);
+    println!("Authenticated as: {}", user_ext.name);
 
     if !args.is_empty() {
         println!("Extra positional args: {:?}", *args);

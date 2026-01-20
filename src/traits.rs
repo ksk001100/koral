@@ -122,6 +122,8 @@ pub trait App {
         let middlewares = self.middlewares();
         let skip_middleware = help_invoked.is_some();
 
+        let mut extensions = std::collections::HashMap::new();
+
         // Execute Middleware 'before' hooks
         // We create a temporary context for BEFORE hooks
         if !skip_middleware {
@@ -133,12 +135,15 @@ pub trait App {
             // For now, we update our local copies.
             flags_map = ctx.flags;
             positionals = ctx.args;
+            extensions = ctx.extensions;
         }
 
         // Execute Command
         // Create context for execution (consumes it)
         let result = {
-            let ctx = Context::new(flags_map.clone(), positionals.clone()).with_state(state);
+            let ctx = Context::new(flags_map.clone(), positionals.clone())
+                .with_state(state)
+                .with_extensions(extensions);
             self.execute(ctx)
         };
 
@@ -210,12 +215,7 @@ pub trait App {
         let middlewares = self.middlewares();
         let skip_middleware = help_invoked.is_some();
 
-        // Execute Middleware 'before' hooks
-        // We define a dummy state for run() which has no shared state
-        // But Context expects `state` as Option<&mut dyn Any>.
-        // Since we don't have a state here, we pass None (implied by default or we can't call with_state).
-        // Wait, `with_state` takes `&mut dyn Any`.
-        // If we don't have state, we just don't call `with_state`.
+        let mut extensions = std::collections::HashMap::new();
 
         if !skip_middleware {
             let mut ctx = Context::new(flags_map.clone(), positionals.clone());
@@ -224,11 +224,13 @@ pub trait App {
             }
             flags_map = ctx.flags;
             positionals = ctx.args;
+            extensions = ctx.extensions;
         }
 
         // Execute Command
         let result = {
-            let ctx = Context::new(flags_map.clone(), positionals.clone());
+            let ctx =
+                Context::new(flags_map.clone(), positionals.clone()).with_extensions(extensions);
             self.execute(ctx)
         };
 
