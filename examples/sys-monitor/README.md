@@ -9,11 +9,11 @@ This example showcases the advanced features of `koral`, specifically:
 
 ```bash
 # Run the monitor with required user flag
-cargo run -p sys-monitor -- --user Admin
+cargo run -- --user Admin
 
 # Run with verbose logging
-cargo run -p sys-monitor -- --user Admin --verbose
+cargo run -- --user Admin --verbose
 
 # Run a subcommand (status)
-cargo run -p sys-monitor -- --user Admin status
+cargo run -- --user Admin status
 ```

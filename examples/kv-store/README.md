@@ -9,8 +9,8 @@ Demonstrates:
 
 ```bash
 # Set a value
-cargo run -p kv-store -- set mykey myvalue
+cargo run -- set mykey myvalue
 
 # Get a value
-cargo run -p kv-store -- get mykey
+cargo run -- get mykey
 ```

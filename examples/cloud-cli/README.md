@@ -10,11 +10,11 @@ A comprehensive simulation of a Cloud Provider CLI, demonstrating:
 
 ```bash
 # Login (gets a token)
-cargo run -p cloud-cli -- login --user admin
+cargo run -- login --user admin
 
 # List instances (requires token)
-cargo run -p cloud-cli -- instance list --token <token>
+cargo run -- instance list --token <token>
 
 # Launch an instance
-cargo run -p cloud-cli -- instance launch --type m5.large --token <token>
+cargo run -- instance launch --type m5.large --token <token>
 ```

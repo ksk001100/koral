@@ -13,12 +13,7 @@ categories = ["command-line-interface"]
 
 [workspace]
 members = [
-    "koral_derive",
-    "examples/hello-world",
-    "examples/todo-app",
-    "examples/sys-monitor",
-    "examples/kv-store",
-    "examples/cloud-cli",
+    "koral_derive"
 ]
 
 [dependencies]

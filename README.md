@@ -33,15 +33,15 @@ cargo doc --open
 ## Installation
 
 ```bash
-cargo add --git https://github.com/ksk001100/koral
+cargo add --git https://github.com/ksk001100/koral koral
 ```
 
 ## Examples
 
 | Example | Description | Command |
 |---------|-------------|---------|
-| [`hello-world`](examples/hello-world) | Minimal "Hello World" example | `cargo run -p hello-world` |
-| [`todo-app`](examples/todo-app) | Full application with subcommands and state | `cargo run -p todo-app` |
-| [`sys-monitor`](examples/sys-monitor) | Features showcase (DI, Middleware, etc.) | `cargo run -p sys-monitor` |
-| [`kv-store`](examples/kv-store) | Key-Value store with persistence | `cargo run -p kv-store` |
-| [`cloud-cli`](examples/cloud-cli) | Comprehensive Cloud CLI Simulation | `cargo run -p cloud-cli` |
+| [`hello-world`](examples/hello-world) | Minimal "Hello World" example | `cd examples/hello-world && cargo run` |
+| [`todo-app`](examples/todo-app) | Full application with subcommands and state | `cd examples/todo-app && cargo run` |
+| [`sys-monitor`](examples/sys-monitor) | Features showcase (DI, Middleware, etc.) | `cd examples/sys-monitor && cargo run` |
+| [`kv-store`](examples/kv-store) | Key-Value store with persistence | `cd examples/kv-store && cargo run` |
+| [`cloud-cli`](examples/cloud-cli) | Comprehensive Cloud CLI Simulation | `cd examples/cloud-cli && cargo run` |

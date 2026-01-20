@@ -8,11 +8,11 @@ A full-featured Todo application demonstrating:
 
 ```bash
 # Add a task
-cargo run -p todo-app -- add "Buy milk"
+cargo run -- add "Buy milk"
 
 # List tasks
-cargo run -p todo-app -- list
+cargo run -- list
 
 # Complete a task
-cargo run -p todo-app -- complete 1
+cargo run -- complete 1
 ```
