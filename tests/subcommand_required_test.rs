@@ -4,7 +4,7 @@ use koral::prelude::*;
 #[flag(name = "user", required = true)]
 struct UserFlag(#[allow(dead_code)] String);
 
-#[derive(App, Default)]
+#[derive(App, FromArgs, Default)]
 #[app(name = "child", action = child_run)]
 struct ChildCmd;
 
@@ -16,6 +16,12 @@ fn child_run(_ctx: Context) -> KoralResult<()> {
 enum Commands {
     #[subcommand(name = "child")]
     Child(ChildCmd),
+}
+
+impl Default for Commands {
+    fn default() -> Self {
+        Self::Child(ChildCmd::default())
+    }
 }
 
 #[derive(App)]

@@ -1,7 +1,7 @@
 use crate::store::Store;
 use koral::prelude::*;
 
-#[derive(App, Default, Clone, Debug, PartialEq)]
+#[derive(App, FromArgs, Default, Clone, Debug, PartialEq)]
 #[app(name = "set", action = set_handler, help = "Set a key-value pair")]
 pub struct SetCmd;
 
@@ -19,7 +19,7 @@ fn set_handler(ctx: Context) -> KoralResult<()> {
     Ok(())
 }
 
-#[derive(App, Default, Clone, Debug, PartialEq)]
+#[derive(App, FromArgs, Default, Clone, Debug, PartialEq)]
 #[app(name = "get", action = get_handler, help = "Get a value by key")]
 pub struct GetCmd;
 
@@ -37,7 +37,7 @@ fn get_handler(ctx: Context) -> KoralResult<()> {
     Ok(())
 }
 
-#[derive(App, Default, Clone, Debug, PartialEq)]
+#[derive(App, FromArgs, Default, Clone, Debug, PartialEq)]
 #[app(name = "del", action = del_handler, help = "Delete a key")]
 pub struct DelCmd;
 
@@ -56,7 +56,7 @@ fn del_handler(ctx: Context) -> KoralResult<()> {
     Ok(())
 }
 
-#[derive(App, Default, Clone, Debug, PartialEq)]
+#[derive(App, FromArgs, Default, Clone, Debug, PartialEq)]
 #[app(name = "list", action = list_handler, help = "List all keys")]
 pub struct ListCmd;
 

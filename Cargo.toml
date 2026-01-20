@@ -13,7 +13,8 @@ categories = ["command-line-interface"]
 
 [workspace]
 members = [
-    "koral_derive"
+    "koral_derive",
+    "examples/*"
 ]
 
 [dependencies]

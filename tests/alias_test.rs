@@ -12,7 +12,13 @@ enum Commands {
     Remove(RemoveCmd),
 }
 
-#[derive(App, Default)]
+impl Default for Commands {
+    fn default() -> Self {
+        Self::Add(AddCmd::default())
+    }
+}
+
+#[derive(App, FromArgs, Default)]
 #[app(name = "add", action = add_action)]
 struct AddCmd;
 
@@ -20,7 +26,7 @@ fn add_action(_ctx: Context<AddCmd>) -> KoralResult<()> {
     Ok(())
 }
 
-#[derive(App, Default)]
+#[derive(App, FromArgs, Default)]
 #[app(name = "remove", action = remove_action)]
 struct RemoveCmd;
 

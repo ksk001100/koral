@@ -7,6 +7,5 @@ It shows how to define a simple application.
 
 ```bash
 # Run the application
-# Run the application
-cargo run
+cargo run -p hello-world
 ```

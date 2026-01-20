@@ -8,7 +8,7 @@ struct ExecutionLog {
 }
 
 // LEVEL 2
-#[derive(App, Default)]
+#[derive(App, FromArgs, Default)]
 #[app(name = "level2", action = level2_action)]
 struct Level2App;
 
@@ -26,7 +26,7 @@ enum Level1Commands {
     Level2(Level2App),
 }
 
-#[derive(App)]
+#[derive(App, FromArgs)]
 #[app(name = "level1", action = level1_action)]
 struct Level1App {
     #[app(subcommand)]
@@ -60,14 +60,6 @@ enum RootCommands {
 struct RootApp {
     #[app(subcommand)]
     cmd: RootCommands,
-}
-
-impl Default for RootApp {
-    fn default() -> Self {
-        Self {
-            cmd: RootCommands::Level1(Level1App::default()),
-        }
-    }
 }
 
 fn root_action(ctx: Context) -> KoralResult<()> {

@@ -27,7 +27,7 @@ impl Default for Commands {
 
 // --- Login Command ---
 
-#[derive(App, Default)]
+#[derive(App, FromArgs, Default)]
 #[app(name = "login", action = login_handler)]
 #[app(flags(UserFlag))]
 pub struct LoginCmd;
@@ -65,7 +65,7 @@ impl Default for InstanceCmd {
     }
 }
 
-#[derive(App, Default)]
+#[derive(App, FromArgs, Default)]
 #[app(name = "launch", action = launch_instance_handler)]
 #[app(flags(InstanceTypeFlag, RegionFlag))]
 pub struct LaunchInstanceCmd;
@@ -98,7 +98,7 @@ fn launch_instance_handler(
     Ok(())
 }
 
-#[derive(App, Default)]
+#[derive(App, FromArgs, Default)]
 #[app(name = "list", action = list_instances_handler)]
 #[app(flags(RegionFlag, FormatFlag))]
 pub struct ListInstancesCmd;
@@ -136,7 +136,7 @@ fn list_instances_handler(
     Ok(())
 }
 
-#[derive(App, Default)]
+#[derive(App, FromArgs, Default)]
 #[app(name = "terminate", action = terminate_instance_handler)]
 pub struct TerminateInstanceCmd {
     // Positional arg: Instance ID
@@ -181,7 +181,7 @@ impl Default for S3Cmd {
     }
 }
 
-#[derive(App, Default)]
+#[derive(App, FromArgs, Default)]
 #[app(name = "ls", action = list_buckets_handler)]
 pub struct ListBucketsCmd;
 
@@ -204,7 +204,7 @@ fn list_buckets_handler(
     Ok(())
 }
 
-#[derive(App, Default)]
+#[derive(App, FromArgs, Default)]
 #[app(name = "mb", action = make_bucket_handler)]
 #[app(flags(RegionFlag))]
 pub struct MakeBucketCmd;

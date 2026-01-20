@@ -15,7 +15,13 @@ enum ChildCmd {
     Show(ShowCmd),
 }
 
-#[derive(App, Default)]
+impl Default for ChildCmd {
+    fn default() -> Self {
+        Self::Add(AddCmd::default())
+    }
+}
+
+#[derive(App, FromArgs, Default)]
 #[app(name = "add")]
 #[app(action = add_action)]
 struct AddCmd;
@@ -29,7 +35,7 @@ fn add_action(ctx: Context) -> KoralResult<()> {
     Ok(())
 }
 
-#[derive(App, Default)]
+#[derive(App, FromArgs, Default)]
 #[app(name = "show")]
 #[app(flags(VerboseFlag))]
 #[app(action = show_action)]

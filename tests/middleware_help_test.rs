@@ -2,7 +2,7 @@ use koral::prelude::*;
 use std::sync::{Arc, Mutex};
 
 // Middleware that marks execution
-#[derive(Clone)]
+#[derive(Clone, Default)]
 struct FlagMiddleware {
     executed: Arc<Mutex<bool>>,
 }

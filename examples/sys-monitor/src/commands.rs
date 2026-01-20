@@ -17,7 +17,7 @@ pub enum OutputFormat {
 )]
 pub struct FormatFlag(#[allow(dead_code)] pub OutputFormat);
 
-#[derive(App, Clone, Debug, Default, PartialEq)]
+#[derive(App, FromArgs, Clone, Debug, Default, PartialEq)]
 #[app(name = "status", action = status_handler, help = "Check system status")]
 #[app(flags(FormatFlag))]
 pub struct StatusCmd;

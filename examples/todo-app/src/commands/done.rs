@@ -1,7 +1,7 @@
 use crate::state::SharedState;
 use koral::prelude::*;
 
-#[derive(Default, koral::App)]
+#[derive(Default, koral::App, FromArgs)]
 #[app(name = "done", action = complete_task)]
 pub struct DoneCmd;
 

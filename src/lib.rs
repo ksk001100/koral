@@ -53,7 +53,7 @@
 //! struct NameFlag(String);
 //!
 //! // 3. Define App
-//! #[derive(App)]
+//! #[derive(Default, App)]
 //! #[app(name = "greet", version = "1.0", action = run)]
 //! #[app(flags(VerboseFlag, NameFlag))]
 //! struct GreetApp;
@@ -101,7 +101,7 @@
 //!     }
 //! }
 //!
-//! #[derive(App)]
+//! #[derive(Default, App)]
 //! #[app(name = "myapp")]
 //! #[app(middleware(LoggerMiddleware))]
 //! struct MyApp;
@@ -110,13 +110,13 @@
 //! **Dynamic Injection** (Configurable):
 //! ```rust
 //! # use koral::prelude::*;
-//! #[derive(Clone)]
+//! #[derive(Clone, Default)]
 //! struct AuthMiddleware { api_key: String }
 //! impl Middleware for AuthMiddleware {
 //!    fn before(&self, _: &mut Context) -> KoralResult<()> { Ok(()) }
 //! }
 //!
-//! #[derive(App)]
+//! #[derive(Default, App)]
 //! #[app(name = "myapp")]
 //! struct MyApp {
 //!     #[app(middleware)] // Injects this field as middleware
@@ -161,7 +161,7 @@
 //! )]
 //! struct OutputFlag(String);
 //!
-//! #[derive(App)]
+//! #[derive(Default, App)]
 //! #[app(name = "secure-app", strict)]
 //! #[app(flags(TokenFlag, OutputFlag))]
 //! struct SecureApp;
@@ -192,7 +192,7 @@
 //! use koral::completion::{Shell, generate_to};
 //! use koral::prelude::*;
 //!
-//! #[derive(App)]
+//! #[derive(Default, App)]
 //! #[app(name = "myapp")]
 //! struct MyApp;
 //!
@@ -288,7 +288,7 @@ pub mod prelude {
     pub use crate::flag::{Flag, FlagDef};
     pub use crate::middleware::Middleware;
     pub use crate::traits::{App as AppTrait, FlagValue, FromArgs};
-    pub use koral_derive::{App, Flag, FlagValue, Subcommand};
+    pub use koral_derive::{App, Flag, FlagValue, FromArgs, Subcommand};
 }
 
 pub use app::App;
@@ -298,6 +298,6 @@ pub use context::Context;
 pub use error::{KoralError, KoralResult};
 pub use extract::{Args, Extension, FlagVal as FlagArg, FromContext, State};
 pub use flag::{Flag, FlagDef};
-pub use koral_derive::{App, Flag, FlagValue, Subcommand};
+pub use koral_derive::{App, Flag, FlagValue, FromArgs, Subcommand};
 pub use middleware::Middleware;
 pub use traits::{FlagValue, FromArgs};
