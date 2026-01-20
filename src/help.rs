@@ -18,6 +18,17 @@ pub fn generate_help<T: App + ?Sized>(app: &T) -> String {
     use std::collections::BTreeMap;
     let mut groups: BTreeMap<Option<String>, Vec<HelpItem>> = BTreeMap::new();
 
+    let mut flags = app.flags();
+    // Sort flags by name
+    flags.sort_by(|a, b| a.name.cmp(&b.name));
+
+    let h_overridden = flags.iter().any(|f| f.short == Some('h'));
+    let help_name = if h_overridden {
+        "--help".to_string()
+    } else {
+        "--help, -h".to_string()
+    };
+
     // Built-in flags (Default group)
     let default_group = groups.entry(None).or_default();
     default_group.push(HelpItem {
@@ -25,13 +36,9 @@ pub fn generate_help<T: App + ?Sized>(app: &T) -> String {
         desc: "Show version information".to_string(),
     });
     default_group.push(HelpItem {
-        name: "--help, -h".to_string(),
+        name: help_name,
         desc: "Show help information".to_string(),
     });
-
-    let mut flags = app.flags();
-    // Sort flags by name
-    flags.sort_by(|a, b| a.name.cmp(&b.name));
 
     for flag in flags {
         let mut name_part = format!("--{}", flag.name);

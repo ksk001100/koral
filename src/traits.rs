@@ -72,7 +72,18 @@ pub trait App {
         args: Vec<String>,
     ) -> KoralResult<()> {
         // Check for help flag, but respect subcommands
-        let help_invoked = args.iter().position(|a| a == "--help" || a == "-h");
+        let flags = self.flags();
+        let h_overridden = flags.iter().any(|f| f.short == Some('h'));
+
+        let help_invoked = args.iter().position(|a| {
+            if a == "--help" {
+                true
+            } else if a == "-h" {
+                !h_overridden
+            } else {
+                false
+            }
+        });
         let subcommands = self.subcommands();
 
         let should_print_help = if let Some(h_idx) = help_invoked {
@@ -162,7 +173,18 @@ pub trait App {
     /// This handles common tasks like help and version checks, and argument parsing.
     fn run(&mut self, args: Vec<String>) -> KoralResult<()> {
         // Check for help flag, but respect subcommands
-        let help_invoked = args.iter().position(|a| a == "--help" || a == "-h");
+        let flags = self.flags();
+        let h_overridden = flags.iter().any(|f| f.short == Some('h'));
+
+        let help_invoked = args.iter().position(|a| {
+            if a == "--help" {
+                true
+            } else if a == "-h" {
+                !h_overridden
+            } else {
+                false
+            }
+        });
         let subcommands = self.subcommands();
 
         let should_print_help = if let Some(h_idx) = help_invoked {
