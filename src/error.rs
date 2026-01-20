@@ -1,6 +1,6 @@
 use thiserror::Error;
 
-#[derive(Debug, Clone, PartialEq, Eq, Error)]
+#[derive(Debug, Error)]
 /// core error type for Koral
 pub enum KoralError {
     /// Error parsing a flag value
@@ -21,6 +21,9 @@ pub enum KoralError {
     /// IO error
     #[error("IO error: {0}")]
     IoError(String),
+    /// Other custom error
+    #[error(transparent)]
+    Other(#[from] Box<dyn std::error::Error + Send + Sync>),
 }
 
 impl From<std::io::Error> for KoralError {
@@ -31,3 +34,18 @@ impl From<std::io::Error> for KoralError {
 
 /// Result type alias for Koral operations
 pub type KoralResult<T> = Result<T, KoralError>;
+
+/// Extension trait for easier error conversion
+pub trait KoralResultExt<T> {
+    /// Convert any error into a KoralError::Other
+    fn koral_err(self) -> KoralResult<T>;
+}
+
+impl<T, E> KoralResultExt<T> for Result<T, E>
+where
+    E: Into<Box<dyn std::error::Error + Send + Sync>>,
+{
+    fn koral_err(self) -> KoralResult<T> {
+        self.map_err(|e| KoralError::Other(e.into()))
+    }
+}
