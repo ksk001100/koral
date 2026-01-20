@@ -10,18 +10,37 @@ pub enum OutputFormat {
     Table,
 }
 
-#[derive(FlagValue, Clone, Debug, PartialEq)] // Using FlagValue for domain enums wrapper or implementing manually.
-                                              // koral's derive(FlagValue) works on enums!
-                                              // But we need to map our domain enums.
-                                              // For simplicity, we redefine identical enums here or wrap them?
-                                              // Since domain types are simple, we can just derive FlagValue on them if we move FlagValue import to domain,
-                                              // OR we just define types here and map them.
-                                              // Let's redefine mirrors for CLI usage to decouple domain/cli.
+#[derive(Clone, Debug, PartialEq)]
 pub enum Region {
     UsEast1,
     UsWest1,
     EuCentral1,
     ApNortheast1,
+}
+
+impl std::str::FromStr for Region {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "us-east-1" => Ok(Region::UsEast1),
+            "us-west-1" => Ok(Region::UsWest1),
+            "eu-central-1" => Ok(Region::EuCentral1),
+            "ap-northeast-1" => Ok(Region::ApNortheast1),
+            _ => Err(format!("Invalid region: {}", s)),
+        }
+    }
+}
+
+impl std::fmt::Display for Region {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Region::UsEast1 => write!(f, "us-east-1"),
+            Region::UsWest1 => write!(f, "us-west-1"),
+            Region::EuCentral1 => write!(f, "eu-central-1"),
+            Region::ApNortheast1 => write!(f, "ap-northeast-1"),
+        }
+    }
 }
 
 impl From<Region> for DomainRegion {
@@ -35,11 +54,34 @@ impl From<Region> for DomainRegion {
     }
 }
 
-#[derive(FlagValue, Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum InstanceType {
     T2Micro,
     T3Medium,
     M5Large,
+}
+
+impl std::str::FromStr for InstanceType {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "t2.micro" => Ok(InstanceType::T2Micro),
+            "t3.medium" => Ok(InstanceType::T3Medium),
+            "m5.large" => Ok(InstanceType::M5Large),
+            _ => Err(format!("Invalid instance type: {}", s)),
+        }
+    }
+}
+
+impl std::fmt::Display for InstanceType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            InstanceType::T2Micro => write!(f, "t2.micro"),
+            InstanceType::T3Medium => write!(f, "t3.medium"),
+            InstanceType::M5Large => write!(f, "m5.large"),
+        }
+    }
 }
 
 impl From<InstanceType> for DomainInstanceType {

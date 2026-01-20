@@ -170,6 +170,9 @@ fn terminate_instance_handler(
 pub enum S3Cmd {
     #[subcommand(name = "ls", help = "List buckets")]
     ListBuckets(ListBucketsCmd),
+
+    #[subcommand(name = "mb", help = "Make bucket")]
+    MakeBucket(MakeBucketCmd),
 }
 
 impl Default for S3Cmd {
@@ -198,5 +201,32 @@ fn list_buckets_handler(
     for b in buckets {
         println!("  s3://{}", b.name);
     }
+    Ok(())
+}
+
+#[derive(App, Default)]
+#[app(name = "mb", action = make_bucket_handler)]
+#[app(flags(RegionFlag))]
+pub struct MakeBucketCmd;
+
+fn make_bucket_handler(
+    state: State<CloudState>,
+    args: Args,
+    region: FlagArg<RegionFlag>,
+) -> KoralResult<()> {
+    if state.current_user.lock().unwrap().is_none() {
+        return Err(KoralError::Validation("User not authenticated".into()));
+    }
+
+    if args.is_empty() {
+        return Err(KoralError::Validation("Missing bucket name".into()));
+    }
+    let name = &args[0];
+
+    // Check if exists?
+    // For simplicity just overwrite or add
+    let bucket = crate::domain::Bucket::new(name.clone(), region.0.into());
+    state.add_bucket(bucket);
+    println!("make_bucket: s3://{}", name);
     Ok(())
 }

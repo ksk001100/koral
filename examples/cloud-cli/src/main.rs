@@ -14,7 +14,7 @@ use crate::state::CloudState;
 
 // --- App Definition ---
 
-#[derive(App)]
+#[derive(App, Default)]
 #[app(name = "cloud-cli", version = "0.1.0", author = "Cloud Corp")]
 #[app(flags(VerboseFlag, ProfileFlag, TokenFlag))]
 #[app(middleware(AuditMiddleware))] // Static middleware (runs for all)

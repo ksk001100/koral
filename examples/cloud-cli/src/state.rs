@@ -3,7 +3,6 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
 #[derive(Clone)]
-#[allow(dead_code)]
 pub struct CloudState {
     pub instances: Arc<Mutex<HashMap<String, Instance>>>,
     pub buckets: Arc<Mutex<HashMap<String, Bucket>>>,
@@ -26,7 +25,6 @@ impl Default for CloudState {
 }
 
 impl CloudState {
-    #[allow(dead_code)]
     pub fn add_instance(&self, instance: Instance) {
         self.instances
             .lock()
@@ -42,7 +40,6 @@ impl CloudState {
         self.instances.lock().unwrap().remove(id)
     }
 
-    #[allow(dead_code)]
     pub fn add_bucket(&self, bucket: Bucket) {
         self.buckets
             .lock()
@@ -58,7 +55,6 @@ impl CloudState {
         self.auth_tokens.lock().unwrap().get(token).cloned()
     }
 
-    #[allow(dead_code)]
     pub fn login(&self, token: &str) -> bool {
         if let Some(user) = self.validate_token(token) {
             *self.current_user.lock().unwrap() = Some(user);

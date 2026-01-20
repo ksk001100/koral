@@ -68,6 +68,7 @@ pub fn impl_derive_subcommand(input: TokenStream) -> TokenStream {
                 });
             }
             Fields::Unnamed(fields) if fields.unnamed.len() == 1 => {
+                let inner_ty = &fields.unnamed.first().unwrap().ty;
                 // If variant holds a value, that value must be an App that we can "run" or construct?
                 // For `FromArgs`, we simply construct it. The App trait usually doesn't strictly imply construction from args directly unless we add another trait.
                 // But typically if we match a subcommand, we want to delegate execution.
@@ -89,15 +90,9 @@ pub fn impl_derive_subcommand(input: TokenStream) -> TokenStream {
 
                 match_arms.push(quote! {
                      s if s == #cmd_name || [#(#aliases),*].contains(&s) => {
-                        // We strictly don't parse the INNER app here because `FromArgs` is just determining WHICH subcommand it is?
-                        // Or should `FromArgs` also populate the inner app?
-                        // If `RemoteApp` implements `Flag` parsing logic...
-                        //
-                        // Koral's `App` is stateful (flags, etc).
-                        // If we return `Remote(RemoteApp)`, we assume verification/parsing happens LATER or `RemoteApp` is just initialized.
-                        // Let's assume initialization via `Default`.
-
-                        Ok(Self::#variant_name(Default::default()))
+                        let remaining_args = if args.len() > 1 { &args[1..] } else { &[] };
+                        let inner = <#inner_ty as koral::traits::FromArgs>::from_args(remaining_args).ok().unwrap_or_default();
+                        Ok(Self::#variant_name(inner))
                     },
                 });
 

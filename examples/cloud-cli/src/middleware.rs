@@ -1,4 +1,4 @@
-// use crate::flags::TokenFlag;
+use crate::flags::{ProfileFlag, VerboseFlag};
 use crate::state::CloudState;
 use koral::prelude::*;
 use std::sync::{Arc, Mutex};
@@ -17,7 +17,7 @@ pub struct UserContext {
 */
 
 // --- Auth Middleware ---
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct AuthMiddleware {
     pub state: CloudState,
 }
@@ -65,8 +65,18 @@ pub struct AuditMiddleware {
 }
 
 impl Middleware for AuditMiddleware {
-    fn before(&self, _ctx: &mut Context) -> KoralResult<()> {
-        // println!("[Audit] Command started: {:?}", ctx.args);
+    fn before(&self, ctx: &mut Context) -> KoralResult<()> {
+        let verbose = ctx.get::<VerboseFlag>().unwrap_or(false);
+        if verbose {
+            println!("[Audit] Command started: {:?}", ctx.args);
+        }
+
+        if let Some(profile) = ctx.get::<ProfileFlag>() {
+            if verbose {
+                println!("[Audit] Using profile: {}", profile);
+            }
+        }
+
         *self.start_time.lock().unwrap() = Some(Instant::now());
         Ok(())
     }

@@ -276,5 +276,20 @@ pub fn impl_derive_app(input: TokenStream) -> TokenStream {
         }
     };
 
+    let from_args_impl = quote! {
+        impl koral::traits::FromArgs for #name {
+            fn from_args(_args: &[String]) -> koral::KoralResult<Self> {
+                Ok(Self::default())
+            }
+
+            fn get_subcommands() -> Vec<koral::internal::command::CommandDef> {
+                <Self as koral::traits::App>::subcommands(&Self::default())
+            }
+        }
+    };
+
+    let mut expanded = expanded;
+    expanded.extend(from_args_impl);
+
     TokenStream::from(expanded)
 }

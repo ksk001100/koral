@@ -82,7 +82,6 @@ pub struct Bucket {
 }
 
 impl Bucket {
-    #[allow(dead_code)]
     pub fn new(name: String, region: Region) -> Self {
         Self {
             name,
