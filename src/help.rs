@@ -32,12 +32,12 @@ pub fn generate_help<T: App + ?Sized>(app: &T) -> String {
     // Built-in flags (Default group)
     let default_group = groups.entry(None).or_default();
     default_group.push(HelpItem {
-        name: "--version".to_string(),
-        desc: "Show version information".to_string(),
-    });
-    default_group.push(HelpItem {
         name: help_name,
         desc: "Show help information".to_string(),
+    });
+    default_group.push(HelpItem {
+        name: "--version".to_string(),
+        desc: "Show version information".to_string(),
     });
 
     for flag in flags {
@@ -73,15 +73,19 @@ pub fn generate_help<T: App + ?Sized>(app: &T) -> String {
             });
     }
 
-    // Calculate max width across ALL items for consistent alignment?
-    // Or per section? Usually per section is fine or global.
-    // Let's do global alignment for neatness.
+    // Sort items within groups by name (optional, but good)
+    for items in groups.values_mut() {
+        items.sort_by(|a, b| a.name.cmp(&b.name));
+    }
+
+    // Calculate max width across ALL items for consistent alignment
     let max_width = groups
         .values()
         .flat_map(|items| items.iter().map(|i| i.name.len()))
         .max()
         .unwrap_or(0);
-    let padding = 2;
+
+    let padding = 4; // Increased padding for better readability
 
     // Output groups
     // 1. None (Options) first
@@ -124,9 +128,6 @@ pub fn generate_help<T: App + ?Sized>(app: &T) -> String {
             out.push_str(&format!("{}\n", line));
         }
     }
-
-    // Remove trailing newline if any? standard println! adds one.
-    // Let's keep one trailing newline.
 
     out
 }

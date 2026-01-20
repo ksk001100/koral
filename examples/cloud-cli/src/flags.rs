@@ -55,18 +55,22 @@ impl From<InstanceType> for DomainInstanceType {
 // --- Flags ---
 
 #[derive(Flag, Debug, Clone)]
-#[flag(name = "verbose", short = 'v', help = "詳細なログ出力を有効にします")]
+#[flag(name = "verbose", short = 'v', help = "Enable verbose logging")]
 pub struct VerboseFlag(#[allow(dead_code)] pub bool);
 
 #[derive(Flag, Debug, Clone)]
-#[flag(name = "profile", help = "使用するプロファイル名")]
+#[flag(
+    name = "profile",
+    help = "Profile name to use",
+    help_heading = "Config"
+)]
 pub struct ProfileFlag(#[allow(dead_code)] pub String);
 
 #[derive(Flag, Debug, Clone)]
 #[flag(
     name = "region",
     short = 'r',
-    help = "リージョンを指定します",
+    help = "Specify the region",
     default = "us-east-1"
 )]
 pub struct RegionFlag(#[allow(dead_code)] pub Region);
@@ -74,19 +78,24 @@ pub struct RegionFlag(#[allow(dead_code)] pub Region);
 #[derive(Flag, Debug, Clone)]
 #[flag(
     name = "format",
-    help = "出力形式 (json, text, table)",
+    help = "Output format (json, text, table)",
     default = "text"
 )]
 pub struct FormatFlag(#[allow(dead_code)] pub OutputFormat);
 
 #[derive(Flag, Debug, Clone)]
-#[flag(name = "type", help = "インスタンスタイプ", default = "t2.micro")]
+#[flag(name = "type", help = "Instance type", default = "t2.micro")]
 pub struct InstanceTypeFlag(#[allow(dead_code)] pub InstanceType);
 
 #[derive(Flag, Debug, Clone)]
-#[flag(name = "user", required = true, help = "ユーザー名")]
+#[flag(name = "user", required = true, help = "Username")]
 pub struct UserFlag(#[allow(dead_code)] pub String);
 
 #[derive(Flag, Debug, Clone)]
-#[flag(name = "token", env = "CLOUD_CLI_TOKEN", help = "認証トークン")]
+#[flag(
+    name = "token",
+    env = "CLOUD_CLI_TOKEN",
+    help = "Authentication token",
+    help_heading = "Config"
+)]
 pub struct TokenFlag(#[allow(dead_code)] pub String);
