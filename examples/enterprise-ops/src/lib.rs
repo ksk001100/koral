@@ -59,7 +59,7 @@ impl Middleware for AuthMiddleware {
     }
 }
 
-#[derive(App)]
+#[derive(App, Default)]
 #[app(
     name = "ops",
     version = "1.0.0",

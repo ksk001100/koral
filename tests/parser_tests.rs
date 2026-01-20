@@ -13,7 +13,7 @@ struct ForceFlag;
 #[flag(name = "name", default = "")]
 struct NameFlag(#[allow(dead_code)] String);
 
-#[derive(App)]
+#[derive(App, Default)]
 #[app(name = "test", action = test_action)]
 #[app(flags(VerboseFlag, ForceFlag, NameFlag))]
 struct TestApp;

@@ -1,7 +1,7 @@
 use crate::context::AppContext;
 use koral::prelude::*;
 
-#[derive(Default, App, FromArgs)]
+#[derive(Default, App)]
 #[app(name = "metrics", about = "Query metrics")]
 #[app(subcommands(QueryCmd, DashboardCmd))]
 pub struct MetricsCmd;

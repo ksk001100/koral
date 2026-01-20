@@ -17,7 +17,7 @@ struct VerboseFlag(#[allow(dead_code)] bool);
 #[flag(name = "user", required = true, help = "User name (required)")]
 struct UserFlag(#[allow(dead_code)] String);
 
-#[derive(App)]
+#[derive(App, Default)]
 #[app(name = "comprehensive", version = "2.0", action = main_handler)]
 #[app(flags(VerboseFlag, UserFlag))]
 #[app(middleware(TimingMiddleware))] // Static registration

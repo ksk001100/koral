@@ -12,7 +12,7 @@ struct AppState {
 #[flag(name = "verbose", short = 'v')]
 struct VerboseFlag(bool);
 
-#[derive(App)]
+#[derive(App, Default)]
 #[app(name = "di_test", action = run)]
 #[app(flags(VerboseFlag))]
 struct DiApp;
@@ -73,7 +73,7 @@ fn test_di_handler() {
 }
 
 // Test legacy handler compatibility
-#[derive(App)]
+#[derive(App, Default)]
 #[app(name = "legacy_test", action = run_legacy)]
 struct LegacyApp;
 
@@ -85,7 +85,7 @@ fn run_legacy(ctx: Context) -> KoralResult<()> {
     Ok(())
 }
 
-#[derive(App)]
+#[derive(App, Default)]
 #[app(name = "legacy_msg_test", action = run_legacy_msg)]
 struct LegacyMsgApp {
     msg: String,

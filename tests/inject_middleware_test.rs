@@ -21,7 +21,7 @@ fn log() -> &'static Mutex<Vec<String>> {
 }
 
 // 2. Define App with Injected Middleware
-#[derive(App)]
+#[derive(App, Default)]
 #[app(name = "inject_test", action = run)]
 struct InjectApp {
     #[app(middleware)]

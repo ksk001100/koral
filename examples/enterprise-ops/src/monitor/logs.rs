@@ -1,7 +1,7 @@
 use crate::context::AppContext;
 use koral::prelude::*;
 
-#[derive(Default, App, FromArgs)]
+#[derive(Default, App)]
 #[app(name = "logs", about = "Search global logs")]
 #[app(subcommands(SearchLogsCmd))]
 pub struct LogsCmd;

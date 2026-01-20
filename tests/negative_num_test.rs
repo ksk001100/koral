@@ -1,6 +1,6 @@
 use koral::prelude::*;
 
-#[derive(App)]
+#[derive(App, Default)]
 #[app(name = "neg_test", action = run)]
 struct NegApp;
 
@@ -33,7 +33,7 @@ fn test_negative_number_as_positional() {
 #[flag(name = "number", short = '1')] // '1' is a flag!
 struct NumberFlag;
 
-#[derive(App)]
+#[derive(App, Default)]
 #[app(name = "conflict_test")]
 #[app(flags(NumberFlag))]
 struct ConflictApp;

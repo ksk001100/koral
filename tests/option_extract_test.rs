@@ -4,7 +4,7 @@ use koral::prelude::*;
 #[flag(name = "test")]
 struct TestFlag(#[allow(dead_code)] String);
 
-#[derive(App)]
+#[derive(App, Default)]
 #[app(name = "opt_test", action = run)]
 #[app(flags(TestFlag))]
 struct TestApp;

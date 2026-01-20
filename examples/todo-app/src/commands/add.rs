@@ -1,7 +1,7 @@
 use crate::state::SharedState;
 use koral::prelude::*;
 
-#[derive(Default, koral::App, FromArgs)]
+#[derive(Default, koral::App)]
 #[app(name = "add", action = add_task)]
 pub struct AddCmd;
 

@@ -4,7 +4,7 @@ use koral::prelude::*;
 #[flag(name = "user", required = true)]
 struct UserFlag(#[allow(dead_code)] String);
 
-#[derive(App, FromArgs, Default)]
+#[derive(App, Default)]
 #[app(name = "child", action = child_run)]
 struct ChildCmd;
 
@@ -24,7 +24,7 @@ impl Default for Commands {
     }
 }
 
-#[derive(App)]
+#[derive(App, Default)]
 #[app(name = "parent", action = parent_run)]
 #[app(flags(UserFlag))]
 struct ParentApp {

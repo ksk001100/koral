@@ -9,7 +9,7 @@ struct VerboseFlag;
 #[flag(name = "user", short = 'u')]
 struct UserFlag(String);
 
-#[derive(App)]
+#[derive(App, Default)]
 #[app(name = "myprog", action = run)]
 #[app(flags(VerboseFlag, UserFlag))]
 struct MyApp;

@@ -5,7 +5,7 @@ use koral::prelude::*;
 #[flag(name = "verbose", short = 'v', help = "Enable verbose output")]
 struct VerboseFlag;
 
-#[derive(App)]
+#[derive(App, Default)]
 #[app(name = "helpy", description = "A helpful app", action = run)]
 #[app(flags(VerboseFlag))]
 struct HelperApp;

@@ -15,7 +15,7 @@ impl Middleware for FlagMiddleware {
     }
 }
 
-#[derive(App)]
+#[derive(App, Default)]
 #[app(name = "mw_test", action = run)]
 #[app(middleware)] // empty list? No we need to inject or register.
                    // We can't use DI middleware in test easily without struct definition?

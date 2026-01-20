@@ -17,7 +17,7 @@ struct CountFlag(i32);
 #[flag(name = "opt", short = 'o')]
 struct OptFlag(String);
 
-#[derive(App)]
+#[derive(App, Default)]
 #[app(name = "flag_test", action = test_action)]
 #[app(flags(VerboseFlag, NameFlag, CountFlag, OptFlag))]
 struct TestApp;

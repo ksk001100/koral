@@ -21,7 +21,7 @@ impl Middleware for GlobalLogMiddleware {
     }
 }
 
-#[derive(App)]
+#[derive(App, Default)]
 #[app(name = "mw_test", action = run)]
 #[app(middleware(GlobalLogMiddleware))]
 struct MiddlewareApp;

@@ -288,7 +288,7 @@ pub mod prelude {
     pub use crate::flag::{Flag, FlagDef};
     pub use crate::middleware::Middleware;
     pub use crate::traits::{App as AppTrait, FlagValue, FromArgs};
-    pub use koral_derive::{App, Flag, FlagValue, FromArgs, Subcommand};
+    pub use koral_derive::{App, Flag, FlagValue, Subcommand};
 }
 
 pub use app::App;
@@ -298,6 +298,6 @@ pub use context::Context;
 pub use error::{KoralError, KoralResult};
 pub use extract::{Args, Extension, FlagVal as FlagArg, FromContext, State};
 pub use flag::{Flag, FlagDef};
-pub use koral_derive::{App, Flag, FlagValue, FromArgs, Subcommand};
+pub use koral_derive::{App, Flag, FlagValue, Subcommand};
 pub use middleware::Middleware;
 pub use traits::{FlagValue, FromArgs};

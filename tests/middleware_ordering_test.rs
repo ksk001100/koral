@@ -43,7 +43,7 @@ impl Middleware for Mw2 {
     }
 }
 
-#[derive(App)]
+#[derive(App, Default)]
 #[app(name = "order_test", action = run)]
 #[app(middleware(Mw1, Mw2))]
 struct OrderApp;

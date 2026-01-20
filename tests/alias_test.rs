@@ -18,7 +18,7 @@ impl Default for Commands {
     }
 }
 
-#[derive(App, FromArgs, Default)]
+#[derive(App, Default)]
 #[app(name = "add", action = add_action)]
 struct AddCmd;
 
@@ -26,7 +26,7 @@ fn add_action(_ctx: Context<AddCmd>) -> KoralResult<()> {
     Ok(())
 }
 
-#[derive(App, FromArgs, Default)]
+#[derive(App, Default)]
 #[app(name = "remove", action = remove_action)]
 struct RemoveCmd;
 
@@ -34,7 +34,7 @@ fn remove_action(_ctx: Context<RemoveCmd>) -> KoralResult<()> {
     Ok(())
 }
 
-#[derive(App)]
+#[derive(App, Default)]
 #[app(name = "alias_test", action = test_action)]
 #[app(subcommand = cmd)]
 #[app(flags(ListFlag))]

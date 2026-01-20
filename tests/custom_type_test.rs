@@ -40,7 +40,7 @@ struct ColorFlag(Color);
 #[flag(name = "speed", short = 's')]
 struct SpeedFlag(Speed);
 
-#[derive(App)]
+#[derive(App, Default)]
 #[app(name = "custom_test", action = test_action)]
 #[app(flags(ColorFlag, SpeedFlag))]
 struct TestApp;

@@ -4,7 +4,7 @@ use koral::prelude::*;
 #[flag(name = "verbose", short = 'v')]
 struct VerboseFlag; // No default specified, bool
 
-#[derive(App)]
+#[derive(App, Default)]
 #[app(name = "bool_test", action = run)]
 #[app(flags(VerboseFlag))]
 struct TestApp;

@@ -3,7 +3,7 @@ use crate::context::AppContext;
 use koral::prelude::*;
 use serde::Serialize;
 
-#[derive(Default, App, FromArgs)]
+#[derive(Default, App)]
 #[app(name = "postgres", about = "Manage Postgres instances")]
 #[app(subcommands(ListInstancesCmd, CreateInstanceCmd, BackupsCmd))]
 pub struct PostgresCmd;

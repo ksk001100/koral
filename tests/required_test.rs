@@ -8,7 +8,7 @@ struct TokenFlag(String);
 #[flag(name = "optional")]
 struct OptionalFlag(String);
 
-#[derive(App)]
+#[derive(App, Default)]
 #[app(name = "required_test_app", action = run)]
 #[app(flags(TokenFlag, OptionalFlag))]
 struct TestApp;

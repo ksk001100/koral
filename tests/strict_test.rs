@@ -1,6 +1,6 @@
 use koral::prelude::*;
 
-#[derive(App)]
+#[derive(App, Default)]
 #[app(name = "strict_app", action = run, strict)]
 struct StrictApp;
 
@@ -8,7 +8,7 @@ fn run(_ctx: Context) -> KoralResult<()> {
     Ok(())
 }
 
-#[derive(App)]
+#[derive(App, Default)]
 #[app(name = "loose_app", action = run)]
 struct LooseApp;
 

@@ -17,7 +17,7 @@ pub enum OutputFormat {
 )]
 pub struct FormatFlag(#[allow(dead_code)] pub OutputFormat);
 
-#[derive(App, FromArgs, Clone, Debug, Default, PartialEq)]
+#[derive(App, Clone, Debug, Default, PartialEq)]
 #[app(name = "status", action = status_handler, help = "Check system status")]
 #[app(flags(FormatFlag))]
 pub struct StatusCmd;
@@ -34,4 +34,10 @@ fn status_handler(state: State<AppState>, format: FlagArg<FormatFlag>) -> KoralR
 pub enum Commands {
     #[subcommand(name = "status")]
     Status(StatusCmd),
+}
+
+impl Default for Commands {
+    fn default() -> Self {
+        Self::Status(Default::default())
+    }
 }

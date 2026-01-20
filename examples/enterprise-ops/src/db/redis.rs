@@ -1,7 +1,7 @@
 use crate::context::AppContext;
 use koral::prelude::*;
 
-#[derive(Default, App, FromArgs)]
+#[derive(Default, App)]
 #[app(name = "redis", about = "Manage Redis clusters")]
 #[app(subcommands(FlushCacheCmd))]
 pub struct RedisCmd;

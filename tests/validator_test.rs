@@ -13,7 +13,7 @@ fn validate_positive(s: &str) -> Result<(), String> {
 #[flag(name = "positive", validator = validate_positive)]
 struct PositiveFlag(#[allow(dead_code)] i32);
 
-#[derive(App)]
+#[derive(App, Default)]
 #[app(name = "validator_test", action = test_action)]
 #[app(flags(PositiveFlag))]
 struct TestApp;

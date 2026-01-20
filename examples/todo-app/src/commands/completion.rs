@@ -1,7 +1,7 @@
 use crate::TodoApp;
 use koral::prelude::*;
 
-#[derive(App, FromArgs, Default)]
+#[derive(App, Default)]
 #[app(name = "completion", action = completion_action)]
 pub struct CompletionCmd;
 

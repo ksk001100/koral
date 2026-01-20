@@ -38,7 +38,7 @@ pub struct FormatFlag(#[allow(dead_code)] pub ListFormat);
 
 // --- Command ---
 
-#[derive(Default, koral::App, FromArgs)]
+#[derive(Default, koral::App)]
 #[app(name = "list", action = list_tasks)]
 #[app(flags(AllFlag, FormatFlag))]
 pub struct ListCmd;

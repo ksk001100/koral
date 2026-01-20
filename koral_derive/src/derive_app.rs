@@ -246,7 +246,7 @@ pub fn impl_derive_app(input: TokenStream) -> TokenStream {
                 #version
             }
 
-            fn description(&self) -> &str { // Added implementation
+            fn description(&self) -> &str {
                 #description
             }
 
@@ -274,9 +274,17 @@ pub fn impl_derive_app(input: TokenStream) -> TokenStream {
 
             #action_impl
         }
-    };
 
-    let expanded = expanded;
+        impl koral::traits::FromArgs for #name {
+            fn from_args(_args: &[String]) -> koral::KoralResult<Self> {
+                Ok(Self::default())
+            }
+
+            fn get_subcommands() -> Vec<koral::internal::command::CommandDef> {
+                <Self as koral::traits::App>::subcommands(&Self::default())
+            }
+        }
+    };
 
     TokenStream::from(expanded)
 }

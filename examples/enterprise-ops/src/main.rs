@@ -14,7 +14,7 @@ fn main() -> KoralResult<()> {
         },
     );
 
-    let mut app = OpsApp;
+    let mut app = OpsApp::default();
     let args: Vec<String> = std::env::args().collect();
     if let Err(e) = app.run_with_state(&mut state, args) {
         eprintln!("Error: {}", e);

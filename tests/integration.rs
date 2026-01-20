@@ -28,7 +28,7 @@ fn test_parser_flags() {
     // Let's test via App to be safe and use public API only.
 }
 
-#[derive(App)]
+#[derive(App, Default)]
 #[app(name = "testapp", action = test_action)]
 #[app(flags(VerboseFlag, NameFlag))]
 struct TestApp;

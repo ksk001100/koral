@@ -21,7 +21,7 @@ impl Default for ChildCmd {
     }
 }
 
-#[derive(App, FromArgs, Default)]
+#[derive(App, Default)]
 #[app(name = "add")]
 #[app(action = add_action)]
 struct AddCmd;
@@ -35,7 +35,7 @@ fn add_action(ctx: Context) -> KoralResult<()> {
     Ok(())
 }
 
-#[derive(App, FromArgs, Default)]
+#[derive(App, Default)]
 #[app(name = "show")]
 #[app(flags(VerboseFlag))]
 #[app(action = show_action)]
@@ -57,7 +57,7 @@ fn show_action(ctx: Context) -> KoralResult<()> {
 }
 
 // Parent App
-#[derive(App)]
+#[derive(App, Default)]
 #[app(name = "parent")]
 #[app(subcommand)]
 struct ParentApp {

@@ -29,7 +29,7 @@ pub struct User {
 }
 
 // Configurable Middleware (Injected)
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct AuthMiddleware {
     pub api_key: String,
 }

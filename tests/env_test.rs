@@ -5,7 +5,7 @@ use std::sync::{Arc, Mutex, OnceLock};
 #[flag(name = "envflag", env = "KORAL_TEST_ENV")]
 struct EnvFlag(#[allow(dead_code)] String);
 
-#[derive(App)]
+#[derive(App, Default)]
 #[app(name = "envtest", action = test_action)]
 #[app(flags(EnvFlag))]
 struct EnvApp;
