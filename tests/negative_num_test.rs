@@ -44,7 +44,7 @@ fn test_negative_number_conflict() {
     // but flag '1' and group '0', '0'.
 
     let app = ConflictApp;
-    let parser = koral::internal::parser::Parser::new(app.flags());
+    let parser = koral::internal::parser::Parser::new(app.flags()).strict(true);
     let args = vec!["-100".to_string()];
 
     // Should fail because '0' is not a known flag

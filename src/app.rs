@@ -91,7 +91,24 @@ impl AppTrait for App {
     }
 
     fn flags(&self) -> Vec<FlagDef> {
-        self.flags.clone()
+        let mut flags = self.flags.clone();
+        if !flags.iter().any(|f| f.name == "version") {
+            flags.push(FlagDef {
+                name: "version".to_string(),
+                long: Some("version".to_string()),
+                short: Some('V'),
+                help: "Print version information".to_string(),
+                takes_value: false,
+                required: false,
+                default_value: None,
+                env: None,
+                validator: None,
+                aliases: vec![],
+                value_name: None,
+                help_heading: None,
+            });
+        }
+        flags
     }
 
     fn is_strict(&self) -> bool {

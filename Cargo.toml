@@ -18,5 +18,7 @@ members = [
 ]
 
 [dependencies]
+anstream = "0.6.21"
+anstyle = "1.0.13"
 koral_derive = { path = "koral_derive" }
 thiserror = "1.0"

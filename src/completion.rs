@@ -79,16 +79,27 @@ fn generate_zsh<W: Write>(app: &impl App, buf: &mut W) -> io::Result<()> {
     // Flags
     for flag in app.flags() {
         let help = escape_help(&flag.help);
-        let val_hint = if flag.takes_value {
-            format!(":{}", flag.value_name.as_deref().unwrap_or("value"))
-        } else {
-            String::new()
-        };
+        let mut arg_spec = String::new();
+
+        if flag.takes_value {
+            let vname = flag.value_name.as_deref().unwrap_or("value");
+            let v_upper = vname.to_uppercase();
+
+            let action = if v_upper.contains("FILE") || v_upper.contains("PATH") {
+                ":_files"
+            } else if v_upper.contains("DIR") {
+                ":_files -/"
+            } else {
+                // Default: just show value name as message, no specific completion
+                ""
+            };
+            arg_spec = format!(":{}{}", vname, action);
+        }
 
         if let Some(s) = flag.short {
-            writeln!(buf, "        '-{}[{}]{}'", s, help, val_hint)?;
+            writeln!(buf, "        '-{}[{}]{}'", s, help, arg_spec)?;
         }
-        writeln!(buf, "        '--{}[{}]{}'", flag.name, help, val_hint)?;
+        writeln!(buf, "        '--{}[{}]{}'", flag.name, help, arg_spec)?;
     }
 
     // Subcommands

@@ -110,11 +110,6 @@ pub trait App {
             return Ok(());
         }
 
-        if args.contains(&"--version".to_string()) {
-            println!("{} version {}", self.name(), self.version());
-            return Ok(());
-        }
-
         // Parse arguments
         let (mut flags_map, mut positionals) = {
             let parser = crate::parser::Parser::new(self.flags())
@@ -129,6 +124,11 @@ pub trait App {
             let ctx = parser.parse(args_to_parse)?;
             (ctx.flags, ctx.args)
         };
+
+        if flags_map.contains_key("version") {
+            println!("{} version {}", self.name(), self.version());
+            return Ok(());
+        }
 
         let middlewares = self.middlewares();
         let skip_middleware = help_invoked.is_some();
@@ -214,11 +214,6 @@ pub trait App {
             return Ok(());
         }
 
-        if args.contains(&"--version".to_string()) {
-            println!("{} version {}", self.name(), self.version());
-            return Ok(());
-        }
-
         // Parse arguments
         let (mut flags_map, mut positionals) = {
             let parser = crate::parser::Parser::new(self.flags())
@@ -233,6 +228,11 @@ pub trait App {
             let ctx = parser.parse(args_to_parse)?;
             (ctx.flags, ctx.args)
         };
+
+        if flags_map.contains_key("version") {
+            println!("{} version {}", self.name(), self.version());
+            return Ok(());
+        }
 
         let middlewares = self.middlewares();
         let skip_middleware = help_invoked.is_some();

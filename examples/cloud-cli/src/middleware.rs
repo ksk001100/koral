@@ -33,14 +33,8 @@ impl Middleware for AuthMiddleware {
             return Ok(());
         }
 
-        // Try to find token in args (--token <val> / --token=<val>) or Env
-        let mut token = std::env::var("CLOUD_CLI_TOKEN").ok();
-
-        if token.is_none() {
-            if let Some(t) = ctx.value_of("token") {
-                token = Some(t.to_string());
-            }
-        }
+        // rely on context which should be populated by Parser's EnvProvider
+        let token = ctx.value_of("token").map(|s| s.to_string());
 
         if let Some(token_val) = token {
             // Validate using state. If valid, 'login' method updates current_user in state.

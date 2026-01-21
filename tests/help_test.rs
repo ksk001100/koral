@@ -44,8 +44,6 @@ fn test_help_contains_flags() {
 fn test_help_contains_usage() {
     let app = HelperApp;
     let help = generate_help(&app);
-    assert!(
-        help.contains("Usage: helpy"),
-        "Help should contain usage line"
-    );
+    assert!(help.contains("Usage:"), "Help should contain usage label");
+    assert!(help.contains("helpy"), "Help should contain app name");
 }

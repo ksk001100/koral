@@ -215,10 +215,14 @@ pub(crate) mod flag;
 pub(crate) mod handler;
 /// Help message generation.
 pub mod help;
+/// Man page generation.
+pub mod man;
 /// Middlewares.
 pub mod middleware;
 /// Command line argument parser.
 pub(crate) mod parser;
+/// Value providers.
+pub mod provider;
 /// Core traits for the Koral framework.
 pub mod traits;
 
