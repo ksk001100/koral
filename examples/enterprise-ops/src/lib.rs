@@ -9,6 +9,7 @@ pub mod context;
 // Domain Modules
 pub mod cicd;
 pub mod db;
+pub mod gen;
 pub mod iam;
 pub mod k8s;
 pub mod monitor;
@@ -69,7 +70,9 @@ impl Middleware for AuthMiddleware {
     cicd::CicdCmd,
     monitor::MonitorCmd,
     iam::IamCmd,
-    network::NetworkCmd
+    network::NetworkCmd,
+    gen::CompletionCmd,
+    gen::ManCmd
 ))]
 pub enum OpsCmds {
     #[subcommand(name = "k8s")]
@@ -84,6 +87,10 @@ pub enum OpsCmds {
     Iam(iam::IamCmd),
     #[subcommand(name = "network")]
     Network(network::NetworkCmd),
+    #[subcommand(name = "completion")]
+    Completion(gen::CompletionCmd),
+    #[subcommand(name = "man")]
+    Man(gen::ManCmd),
 }
 
 impl Default for OpsCmds {

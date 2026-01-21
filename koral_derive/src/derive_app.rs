@@ -92,6 +92,19 @@ pub fn impl_derive_app(input: TokenStream) -> TokenStream {
                                         });
                                     }
                                 }
+                            } else if list.path.is_ident("subcommands") {
+                                // subcommands(Cmd1, Cmd2)
+                                let types = list
+                                    .parse_args_with(
+                                        syn::punctuated::Punctuated::<syn::Type, syn::Token![,]>::parse_terminated,
+                                    )
+                                    .expect("Failed to parse subcommands list");
+
+                                for ty in types {
+                                    subcommand_registrations.push(quote! {
+                                        subs.extend(<#ty as koral::traits::FromArgs>::get_subcommands());
+                                    });
+                                }
                             }
                         }
 
