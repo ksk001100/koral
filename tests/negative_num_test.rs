@@ -51,9 +51,7 @@ fn test_negative_number_conflict() {
     let result = parser.parse(&args);
     assert!(result.is_err());
 
-    if let Err(koral::KoralError::UnknownFlag(msg)) = result {
-        assert!(msg.contains("'0'"));
-    } else {
-        panic!("Expected UnknownFlag error");
-    }
+    let err = result.unwrap_err();
+    assert_eq!(err.kind(), clap::error::ErrorKind::UnknownArgument);
+    assert!(err.to_string().contains("'0'") || err.to_string().contains("-0"));
 }

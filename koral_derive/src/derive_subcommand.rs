@@ -156,13 +156,19 @@ pub fn impl_derive_subcommand(input: TokenStream) -> TokenStream {
         impl koral::traits::FromArgs for #name {
             fn from_args(args: &[String]) -> koral::KoralResult<Self> {
                 if args.is_empty() {
-                    return Err(koral::internal::error::KoralError::MissingArgument("No subcommand provided".to_string()));
+                    return Err(koral::clap::Error::raw(
+                        koral::clap::error::ErrorKind::MissingRequiredArgument,
+                        "No subcommand provided",
+                    ));
                 }
 
                 let sub_name = &args[0];
                 match sub_name.as_str() {
                     #(#match_arms)*
-                    _ => Err(koral::internal::error::KoralError::InvalidFlag(format!("Unknown subcommand: {}", sub_name))),
+                    _ => Err(koral::clap::Error::raw(
+                        koral::clap::error::ErrorKind::InvalidSubcommand,
+                        format!("Unknown subcommand: {}", sub_name),
+                    )),
                 }
             }
 

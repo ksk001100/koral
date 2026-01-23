@@ -22,27 +22,31 @@ pub struct CompletionCmd;
 pub struct ShellFlag(String);
 
 fn completion_action(_app: &mut CompletionCmd, ctx: Context) -> KoralResult<()> {
-    let shell_str = ctx
-        .get::<ShellFlag>()
-        .ok_or(KoralError::Validation("Missing shell argument".into()))?;
+    let shell_str = ctx.get::<ShellFlag>().ok_or_else(|| {
+        koral::clap::Error::raw(
+            koral::clap::error::ErrorKind::MissingRequiredArgument,
+            "Missing shell argument",
+        )
+    })?;
 
     let shell = match shell_str.to_lowercase().as_str() {
         "bash" => Shell::Bash,
         "zsh" => Shell::Zsh,
         "fish" => Shell::Fish,
         _ => {
-            return Err(KoralError::Validation(format!(
-                "Unsupported shell: {}",
-                shell_str
-            )))
+            return Err(koral::clap::Error::raw(
+                koral::clap::error::ErrorKind::InvalidValue,
+                format!("Unsupported shell: {}", shell_str),
+            ))
         }
     };
 
     let app = crate::OpsApp::default();
     let mut out = stdout();
-    generate_to(&app, shell, &mut out).map_err(|e| KoralError::IoError(e.to_string()))?;
+    generate_to(&app, shell, &mut out)
+        .map_err(|e| koral::clap::Error::raw(koral::clap::error::ErrorKind::Io, e))?;
     out.flush()
-        .map_err(|e| KoralError::IoError(e.to_string()))?;
+        .map_err(|e| koral::clap::Error::raw(koral::clap::error::ErrorKind::Io, e))?;
 
     Ok(())
 }

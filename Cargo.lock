@@ -307,7 +307,6 @@ dependencies = [
  "clap_complete",
  "clap_mangen",
  "koral_derive",
- "thiserror",
 ]
 
 [[package]]

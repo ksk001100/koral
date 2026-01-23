@@ -79,7 +79,7 @@ pub trait App {
                     e.print().expect("Failed to print help/version");
                     return Ok(());
                 }
-                _ => {} // Ignore other errors, they will be handled by the specific level parser
+                _ => {}
             }
         }
 

@@ -17,13 +17,8 @@ fn test_strict_mode_group_error() {
     let res = app.run(args);
     assert!(res.is_err());
     let err = res.unwrap_err();
-    match err {
-        KoralError::UnknownFlag(msg) => {
-            println!("Strict Error: {}", msg);
-            assert!(msg.contains("'x'"));
-        }
-        _ => panic!("Expected UnknownFlag error, got {:?}", err),
-    }
+    assert_eq!(err.kind(), clap::error::ErrorKind::UnknownArgument);
+    assert!(err.to_string().contains("-fx") || err.to_string().contains("-x"));
 }
 
 #[test]

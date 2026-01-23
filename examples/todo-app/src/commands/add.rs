@@ -12,13 +12,16 @@ fn add_task(ctx: Context) -> KoralResult<()> {
     }
     let task = ctx.args.join(" ");
 
-    let state = ctx
-        .state::<SharedState>()
-        .ok_or_else(|| KoralError::Validation("State not found".to_string()))?;
+    let state = ctx.state::<SharedState>().ok_or_else(|| {
+        koral::clap::Error::raw(
+            koral::clap::error::ErrorKind::InvalidValue,
+            "State not found",
+        )
+    })?;
 
-    let mut guard = state
-        .lock()
-        .map_err(|_| KoralError::Validation("Lock poisoned".to_string()))?;
+    let mut guard = state.lock().map_err(|_| {
+        koral::clap::Error::raw(koral::clap::error::ErrorKind::InvalidValue, "Lock poisoned")
+    })?;
     guard.tasks.push(task.clone());
 
     println!("Added task: '{}'", task);

@@ -32,11 +32,10 @@ fn run_strict(args: Vec<&str>) -> KoralResult<()> {
 fn test_strict_unknown_flag() {
     let res = run_strict(vec!["prog", "--unknown"]);
     assert!(res.is_err());
-    if let Err(KoralError::UnknownFlag(msg)) = res {
-        assert!(msg.contains("Unknown flag"), "Msg: {}", msg);
-    } else {
-        panic!("Expected UnknownFlag error");
-    }
+    assert_eq!(
+        res.unwrap_err().kind(),
+        clap::error::ErrorKind::UnknownArgument
+    );
 }
 
 #[test]

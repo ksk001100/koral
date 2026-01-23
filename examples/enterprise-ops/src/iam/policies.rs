@@ -29,8 +29,9 @@ fn validate_policy(_ctx: State<AppContext>, file: FlagArg<FileFlag>) -> KoralRes
     println!("Validating policy file '{}'...", *file);
     // Simulate validation
     if file.ends_with("invalid.json") {
-        return Err(koral::KoralError::Validation(
-            "Policy contains wildcard permission '*:*'".to_string(),
+        return Err(koral::clap::Error::raw(
+            koral::clap::error::ErrorKind::InvalidValue,
+            "Policy contains wildcard permission '*:*'",
         ));
     }
     println!("Policy is valid.");

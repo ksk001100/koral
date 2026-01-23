@@ -13,8 +13,9 @@ fn run(ctx: Context) -> KoralResult<()> {
     // Should be Some(false) if not provided, not None or Error
     let verbose = ctx.get::<VerboseFlag>();
     if verbose.is_none() {
-        return Err(KoralError::Validation(
-            "Verbose flag is None (should be Some(false))".to_string(),
+        return Err(clap::Error::raw(
+            clap::error::ErrorKind::InvalidValue,
+            "Verbose flag is None (should be Some(false))",
         ));
     }
     // Also check extraction via FlagArg if we had DI

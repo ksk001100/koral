@@ -21,12 +21,8 @@ fn run(_ctx: Context) -> KoralResult<()> {
 fn test_missing_required_flag() {
     let mut app = TestApp;
     let err = app.run(vec!["required_test_app".to_string()]).unwrap_err();
-    match err {
-        koral::KoralError::MissingArgument(msg) => {
-            assert!(msg.contains("Required flag '--token' is missing"));
-        }
-        _ => panic!("Expected MissingArgument error, got {:?}", err),
-    }
+    assert_eq!(err.kind(), clap::error::ErrorKind::MissingRequiredArgument);
+    assert!(err.to_string().contains("--token"));
 }
 
 #[test]

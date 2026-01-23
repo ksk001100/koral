@@ -43,14 +43,9 @@ fn test_parent_required_missing_fails() {
     };
     let res = app.run(vec!["parent".to_string()]);
     assert!(res.is_err());
-    if let Err(KoralError::MissingArgument(msg)) = res {
-        assert!(
-            msg.contains("user"),
-            "Error should be about missing user flag"
-        );
-    } else {
-        panic!("Expected MissingArgument error");
-    }
+    let err = res.unwrap_err();
+    assert_eq!(err.kind(), clap::error::ErrorKind::MissingRequiredArgument);
+    assert!(err.to_string().contains("user"));
 }
 
 #[test]

@@ -1,11 +1,16 @@
 use koral::prelude::*;
-use thiserror::Error;
-
-#[derive(Debug, Error)]
+#[derive(Debug)]
 enum MyError {
-    #[error("Something went wrong")]
     SomethingWrong,
 }
+
+impl std::fmt::Display for MyError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Something went wrong")
+    }
+}
+
+impl std::error::Error for MyError {}
 
 struct MyApp;
 
@@ -15,9 +20,11 @@ impl AppTrait for MyApp {
     }
 
     fn execute(&mut self, _ctx: Context) -> KoralResult<()> {
-        // Test direct returning of custom error wrapped in KoralError
-        // This simulates a manual mapping if needed, or verifies `?` works if we had a helper that returned KoralResult
-        Err(KoralError::Other(Box::new(MyError::SomethingWrong)))
+        // Test direct returning of custom error wrapped in KoralResult (clap::Error)
+        Err(clap::Error::raw(
+            clap::error::ErrorKind::Io,
+            MyError::SomethingWrong,
+        ))
     }
 }
 
@@ -46,18 +53,10 @@ fn test_custom_error_wrapping() {
     let mut app = MyApp;
     let result = app.execute(Context::new(Default::default(), vec![]));
     match result {
-        Err(KoralError::Other(e)) => {
-            assert_eq!(e.to_string(), "Something went wrong");
-            // Downcast check
-            if let Some(my_err) = e.downcast_ref::<MyError>() {
-                match my_err {
-                    MyError::SomethingWrong => (), // OK
-                }
-            } else {
-                panic!("Could not downcast to MyError");
-            }
+        Err(e) if e.kind() == clap::error::ErrorKind::Io => {
+            assert!(e.to_string().contains("Something went wrong"));
         }
-        _ => panic!("Expected KoralError::Other"),
+        _ => panic!("Expected ErrorKind::Io, got {:?}", result),
     }
 }
 
@@ -66,9 +65,12 @@ fn test_extension_trait() {
     let mut app = ExtApp;
     let result = app.execute(Context::new(Default::default(), vec![]));
     match result {
-        Err(KoralError::Other(e)) => {
-            assert_eq!(e.to_string(), "Something went wrong");
+        Err(e) if e.kind() == clap::error::ErrorKind::Io => {
+            assert!(e.to_string().contains("Something went wrong"));
         }
-        _ => panic!("Expected KoralError::Other from extension trait"),
+        _ => panic!(
+            "Expected ErrorKind::Io from extension trait, got {:?}",
+            result
+        ),
     }
 }

@@ -16,26 +16,18 @@ struct LooseApp;
 fn test_strict_mode_unknown_long_flag() {
     let mut app = StrictApp;
     let res = app.run(vec!["strict_app".to_string(), "--unknown".to_string()]);
-    assert!(res.is_err());
-    match res.unwrap_err() {
-        koral::KoralError::UnknownFlag(msg) => {
-            assert!(msg.contains("--unknown"));
-        }
-        _ => panic!("Expected UnknownFlag error"),
-    }
+    let err = res.unwrap_err();
+    assert_eq!(err.kind(), clap::error::ErrorKind::UnknownArgument);
+    assert!(err.to_string().contains("--unknown"));
 }
 
 #[test]
 fn test_strict_mode_unknown_short_flag() {
     let mut app = StrictApp;
     let res = app.run(vec!["strict_app".to_string(), "-u".to_string()]);
-    assert!(res.is_err());
-    match res.unwrap_err() {
-        koral::KoralError::UnknownFlag(msg) => {
-            assert!(msg.contains("'u'"));
-        }
-        _ => panic!("Expected UnknownFlag error"),
-    }
+    let err = res.unwrap_err();
+    assert_eq!(err.kind(), clap::error::ErrorKind::UnknownArgument);
+    assert!(err.to_string().contains("-u"));
 }
 
 #[test]

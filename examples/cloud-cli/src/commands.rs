@@ -77,12 +77,12 @@ fn launch_instance_handler(
     region: FlagArg<RegionFlag>,
 ) -> KoralResult<()> {
     // Retrieve user from state (populated by middleware)
-    let username = state
-        .current_user
-        .lock()
-        .unwrap()
-        .clone()
-        .ok_or(KoralError::Validation("User not authenticated".into()))?;
+    let username = state.current_user.lock().unwrap().clone().ok_or_else(|| {
+        koral::clap::Error::raw(
+            koral::clap::error::ErrorKind::InvalidValue,
+            "User not authenticated",
+        )
+    })?;
 
     println!("Launching instance for user: {}", username);
 
@@ -111,7 +111,10 @@ fn list_instances_handler(
 ) -> KoralResult<()> {
     // Ensure we are authenticated (though Middleware should have enforced it)
     if state.current_user.lock().unwrap().is_none() {
-        return Err(KoralError::Validation("User not authenticated".into()));
+        return Err(koral::clap::Error::raw(
+            koral::clap::error::ErrorKind::InvalidValue,
+            "User not authenticated",
+        ));
     }
 
     let instances = state.list_instances();
@@ -149,11 +152,17 @@ fn terminate_instance_handler(
     args: Args,
 ) -> KoralResult<()> {
     if state.current_user.lock().unwrap().is_none() {
-        return Err(KoralError::Validation("User not authenticated".into()));
+        return Err(koral::clap::Error::raw(
+            koral::clap::error::ErrorKind::InvalidValue,
+            "User not authenticated",
+        ));
     }
 
     if args.is_empty() {
-        return Err(KoralError::Validation("Missing instance ID".into()));
+        return Err(koral::clap::Error::raw(
+            koral::clap::error::ErrorKind::InvalidValue,
+            "Missing instance ID",
+        ));
     }
     let id = &args[0];
     if state.terminate_instance(id).is_some() {
@@ -190,7 +199,10 @@ fn list_buckets_handler(
     // Removed injection: _user_ctx: Extension<UserContext>,
 ) -> KoralResult<()> {
     if state.current_user.lock().unwrap().is_none() {
-        return Err(KoralError::Validation("User not authenticated".into()));
+        return Err(koral::clap::Error::raw(
+            koral::clap::error::ErrorKind::InvalidValue,
+            "User not authenticated",
+        ));
     }
 
     let buckets = state.list_buckets();
@@ -215,11 +227,17 @@ fn make_bucket_handler(
     region: FlagArg<RegionFlag>,
 ) -> KoralResult<()> {
     if state.current_user.lock().unwrap().is_none() {
-        return Err(KoralError::Validation("User not authenticated".into()));
+        return Err(koral::clap::Error::raw(
+            koral::clap::error::ErrorKind::InvalidValue,
+            "User not authenticated",
+        ));
     }
 
     if args.is_empty() {
-        return Err(KoralError::Validation("Missing bucket name".into()));
+        return Err(koral::clap::Error::raw(
+            koral::clap::error::ErrorKind::InvalidValue,
+            "Missing bucket name",
+        ));
     }
     let name = &args[0];
 

@@ -47,13 +47,16 @@ fn list_tasks(ctx: Context) -> KoralResult<()> {
     let show_all = ctx.get::<AllFlag>().unwrap_or(false);
     let format = ctx.get::<FormatFlag>().expect("Default value");
 
-    let state = ctx
-        .state::<SharedState>()
-        .ok_or_else(|| KoralError::Validation("State not found".to_string()))?;
+    let state = ctx.state::<SharedState>().ok_or_else(|| {
+        koral::clap::Error::raw(
+            koral::clap::error::ErrorKind::InvalidValue,
+            "State not found",
+        )
+    })?;
 
-    let guard = state
-        .lock()
-        .map_err(|_| KoralError::Validation("Lock poisoned".to_string()))?;
+    let guard = state.lock().map_err(|_| {
+        koral::clap::Error::raw(koral::clap::error::ErrorKind::InvalidValue, "Lock poisoned")
+    })?;
 
     println!("Tasks (Format: {:?}):", format);
     for (i, task) in guard.tasks.iter().enumerate() {

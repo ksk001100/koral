@@ -74,9 +74,10 @@ fn run_test(args: Vec<&str>) -> KoralResult<TestResult> {
     app.run_with_state(&mut state, args)?;
 
     let guard = result_store.lock().unwrap();
-    guard
-        .clone()
-        .ok_or(KoralError::Validation("Action did not run".to_string()))
+    guard.clone().ok_or(clap::Error::raw(
+        clap::error::ErrorKind::InvalidValue,
+        "Action did not run",
+    ))
 }
 
 #[test]

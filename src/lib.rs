@@ -257,6 +257,9 @@ pub mod internal {
     }
 }
 
+/// Re-export clap for convenience
+pub use clap;
+
 pub mod prelude {
     //! The Koral prelude.
     //!
@@ -292,6 +295,7 @@ pub mod prelude {
     pub use crate::flag::{Flag, FlagDef};
     pub use crate::middleware::Middleware;
     pub use crate::traits::{App as AppTrait, FlagValue, FromArgs};
+    pub use clap::error::ErrorKind;
     pub use koral_derive::{App, Flag, FlagValue, Subcommand};
 }
 

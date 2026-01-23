@@ -1,5 +1,5 @@
 use crate::context::Context;
-use crate::error::{KoralError, KoralResult};
+use crate::error::KoralResult;
 use clap::{Arg, ArgAction, Command};
 use std::collections::HashMap;
 
@@ -69,7 +69,6 @@ impl Parser {
             Ok(m) => m,
             Err(e) => {
                 use clap::error::ErrorKind;
-                let msg = e.to_string();
                 if !self.strict
                     && (e.kind() == ErrorKind::UnknownArgument
                         || e.kind() == ErrorKind::InvalidSubcommand)
@@ -79,40 +78,7 @@ impl Parser {
                         .try_get_matches_from(args)
                         .unwrap_or_else(|_| clap::ArgMatches::default())
                 } else {
-                    return Err(match e.kind() {
-                        ErrorKind::UnknownArgument => {
-                            // Extract flag name more robustly
-                            let flag_name = if let Some(start) = msg.find("'") {
-                                let rest = &msg[start + 1..];
-                                if let Some(end) = rest.find("'") {
-                                    &rest[..end]
-                                } else {
-                                    rest
-                                }
-                            } else {
-                                &msg
-                            };
-
-                            if flag_name.starts_with("--") {
-                                KoralError::UnknownFlag(format!("Unknown flag '{}'", flag_name))
-                            } else if flag_name.starts_with('-') && flag_name.len() == 2 {
-                                KoralError::UnknownFlag(format!(
-                                    "Unknown short flag '{}'",
-                                    &flag_name[1..]
-                                ))
-                            } else if flag_name.starts_with('-') {
-                                KoralError::UnknownFlag(format!(
-                                    "Unknown short flag in '{}'",
-                                    flag_name
-                                ))
-                            } else {
-                                KoralError::UnknownFlag(format!("Unknown flag '{}'", flag_name))
-                            }
-                        }
-                        ErrorKind::MissingRequiredArgument => KoralError::MissingArgument(msg),
-                        ErrorKind::ValueValidation => KoralError::FlagValueParseError(msg),
-                        _ => KoralError::Validation(msg),
-                    });
+                    return Err(e);
                 }
             }
         };
@@ -221,27 +187,31 @@ impl Parser {
 /// Helper to recursively build a clap::Command from an App.
 pub fn build_command<T: crate::traits::App + ?Sized>(app: &T) -> Command {
     let flags = app.flags();
-    let has_v_long = flags
+    let conflict_v = flags.iter().any(|f| {
+        (f.short == Some('V') || f.long.as_deref() == Some("version")) && f.name != "version"
+    });
+    let conflict_h = flags
         .iter()
-        .any(|f| f.long.as_deref() == Some("version") || (f.long.is_none() && f.name == "version"));
-    let has_v_short = flags.iter().any(|f| f.short == Some('V'));
-    let has_h_long = flags
-        .iter()
-        .any(|f| f.long.as_deref() == Some("help") || (f.long.is_none() && f.name == "help"));
-    let has_h_short = flags.iter().any(|f| f.short == Some('h'));
+        .any(|f| (f.short == Some('h') || f.long.as_deref() == Some("help")) && f.name != "help");
 
     let mut cmd = Command::new(Box::leak(app.name().to_string().into_boxed_str()) as &'static str)
         .version(Box::leak(app.version().to_string().into_boxed_str()) as &'static str)
         .about(Box::leak(app.description().to_string().into_boxed_str()) as &'static str);
 
-    if has_v_long || has_v_short {
+    if conflict_v {
         cmd = cmd.disable_version_flag(true);
     }
-    if has_h_long || has_h_short {
+    if conflict_h {
         cmd = cmd.disable_help_flag(true);
     }
 
     for flag in &flags {
+        if !conflict_v && flag.name == "version" {
+            continue;
+        }
+        if !conflict_h && flag.name == "help" {
+            continue;
+        }
         cmd = cmd.arg(create_arg(flag, false));
     }
 
@@ -253,28 +223,31 @@ pub fn build_command<T: crate::traits::App + ?Sized>(app: &T) -> Command {
 }
 
 fn build_command_from_def(def: &crate::command::CommandDef) -> Command {
-    let has_v_long = def
+    let conflict_v = def.flags.iter().any(|f| {
+        (f.short == Some('V') || f.long.as_deref() == Some("version")) && f.name != "version"
+    });
+    let conflict_h = def
         .flags
         .iter()
-        .any(|f| f.long.as_deref() == Some("version") || (f.long.is_none() && f.name == "version"));
-    let has_v_short = def.flags.iter().any(|f| f.short == Some('V'));
-    let has_h_long = def
-        .flags
-        .iter()
-        .any(|f| f.long.as_deref() == Some("help") || (f.long.is_none() && f.name == "help"));
-    let has_h_short = def.flags.iter().any(|f| f.short == Some('h'));
+        .any(|f| (f.short == Some('h') || f.long.as_deref() == Some("help")) && f.name != "help");
 
     let mut cmd = Command::new(Box::leak(def.name.clone().into_boxed_str()) as &'static str)
         .about(Box::leak(def.description.clone().into_boxed_str()) as &'static str);
 
-    if has_v_long || has_v_short {
+    if conflict_v {
         cmd = cmd.disable_version_flag(true);
     }
-    if has_h_long || has_h_short {
+    if conflict_h {
         cmd = cmd.disable_help_flag(true);
     }
 
     for flag in &def.flags {
+        if !conflict_v && flag.name == "version" {
+            continue;
+        }
+        if !conflict_h && flag.name == "help" {
+            continue;
+        }
         cmd = cmd.arg(create_arg(flag, false));
     }
 
@@ -356,10 +329,10 @@ pub fn validate_required_flags(
 ) -> KoralResult<()> {
     for flag in flags {
         if flag.required && !flags_map.contains_key(&flag.name) {
-            return Err(KoralError::MissingArgument(format!(
-                "Required flag '--{}' is missing",
-                flag.name
-            )));
+            return Err(clap::Error::raw(
+                clap::error::ErrorKind::MissingRequiredArgument,
+                format!("Required flag '--{}' is missing", flag.name),
+            ));
         }
     }
     Ok(())
@@ -412,7 +385,11 @@ mod tests {
         let mut map2 = HashMap::new();
         map2.insert("opt".to_string(), Some("val".to_string()));
         let err = validate_required_flags(&flags, &map2);
-        assert!(matches!(err, Err(KoralError::MissingArgument(_))));
+        assert!(err.is_err());
+        assert_eq!(
+            err.unwrap_err().kind(),
+            clap::error::ErrorKind::MissingRequiredArgument
+        );
 
         // Case 3: Required present, Optional missing (OK)
         let mut map3 = HashMap::new();

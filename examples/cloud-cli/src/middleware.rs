@@ -48,7 +48,10 @@ impl Middleware for AuthMiddleware {
             // println!("Debug: No token found in env or args or flags");
         }
 
-        Err(KoralError::Validation("Authentication failed: Please provide a valid --token or set CLOUD_CLI_TOKEN. Try 'login' first.".into()))
+        Err(koral::clap::Error::raw(
+            koral::clap::error::ErrorKind::InvalidValue,
+            "Authentication failed: Please provide a valid --token or set CLOUD_CLI_TOKEN. Try 'login' first.",
+        ))
     }
 }
 

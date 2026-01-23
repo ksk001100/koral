@@ -54,10 +54,10 @@ where
                     }
                     None => {
                         println!("DEBUG: No default value for {}", F::name());
-                        Err(crate::KoralError::MissingArgument(format!(
-                            "Flag '{}' not found",
-                            F::name()
-                        )))
+                        Err(clap::Error::raw(
+                            clap::error::ErrorKind::MissingRequiredArgument,
+                            format!("Flag '{}' not found", F::name()),
+                        ))
                     }
                 }
             }
@@ -83,7 +83,8 @@ impl<'a, T: 'static + Clone> FromContext<'a> for State<T> {
     fn from_context(ctx: &'a Context) -> KoralResult<Self> {
         match ctx.state::<T>() {
             Some(s) => Ok(State(s.clone())),
-            None => Err(crate::KoralError::Validation(
+            None => Err(clap::Error::raw(
+                clap::error::ErrorKind::InvalidValue,
                 "Shared state not found or type mismatch".to_string(),
             )),
         }
@@ -97,7 +98,7 @@ where
     fn from_context(ctx: &'a Context) -> KoralResult<Self> {
         match T::from_context(ctx) {
             Ok(v) => Ok(Some(v)),
-            Err(crate::KoralError::MissingArgument(_)) => Ok(None),
+            Err(e) if e.kind() == clap::error::ErrorKind::MissingRequiredArgument => Ok(None),
             Err(e) => Err(e),
         }
     }
@@ -161,10 +162,13 @@ impl<'a, T: Clone + Send + Sync + 'static> FromContext<'a> for Extension<T> {
     fn from_context(ctx: &'a Context) -> KoralResult<Self> {
         match ctx.get_extension::<T>() {
             Some(v) => Ok(Extension(v.clone())),
-            None => Err(crate::KoralError::MissingArgument(format!(
-                "Extension of type '{}' not found",
-                std::any::type_name::<T>()
-            ))),
+            None => Err(clap::Error::raw(
+                clap::error::ErrorKind::MissingRequiredArgument,
+                format!(
+                    "Extension of type '{}' not found",
+                    std::any::type_name::<T>()
+                ),
+            )),
         }
     }
 }
