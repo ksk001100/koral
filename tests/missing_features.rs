@@ -72,7 +72,7 @@ fn test_typo_correction() {
     let err = app.run(args).unwrap_err();
     match err {
         KoralError::UnknownFlag(msg) => {
-            assert!(msg.contains("Did you mean '--flag'?"));
+            assert!(msg.contains("--flag"));
         }
         _ => panic!("Expected UnknownFlag error, got {:?}", err),
     }

@@ -1,5 +1,6 @@
 use crate::context::Context;
 use crate::error::{KoralError, KoralResult};
+use clap::{Arg, ArgAction, Command};
 use std::collections::HashMap;
 
 /// Command line argument parser
@@ -33,231 +34,159 @@ impl Parser {
 
     /// Parse the provided arguments into a Context.
     pub fn parse<'a>(&self, args: &[String]) -> KoralResult<Context<'a>> {
-        let mut flags_map: HashMap<String, Option<String>> = HashMap::new();
+        // Only allow negative numbers if no short flags are digits
+        let has_numeric_flag = self
+            .known_flags
+            .iter()
+            .any(|f| f.short.map(|s| s.is_ascii_digit()).unwrap_or(false));
 
-        let mut positionals: Vec<String> = Vec::new();
+        let mut cmd = Command::new("koral")
+            .no_binary_name(true)
+            .allow_negative_numbers(!has_numeric_flag)
+            .disable_help_flag(true)
+            .disable_version_flag(true);
 
-        let mut iter = args.iter();
-        while let Some(arg) = iter.next() {
-            if arg == "--" {
-                // consume all remaining arguments as positionals
-                for remaining in iter {
-                    positionals.push(remaining.clone());
-                }
-                break;
-            }
-
-            if arg.starts_with("--") {
-                // Long flag
-                self.parse_long_flag(arg, &mut iter, &mut flags_map, &mut positionals)?;
-            } else if arg.starts_with('-') && arg.len() > 1 {
-                // Short flag (potentially combined)
-                self.parse_short_flags(arg, &mut iter, &mut flags_map, &mut positionals)?;
-            } else {
-                positionals.push(arg.clone());
-            }
+        if !self.strict {
+            cmd = cmd.allow_external_subcommands(true);
         }
 
-        // Fill in default values if missing
-        self.apply_defaults(&mut flags_map);
-
-        // Validate flags
-        self.validate_constraints(&flags_map)?;
-
-        Ok(Context::new(flags_map, positionals))
-    }
-
-    fn find_short_flag(&self, c: char) -> Option<&crate::flag::FlagDef> {
         for flag in &self.known_flags {
-            if let Some(s) = flag.short {
-                if s == c {
-                    return Some(flag);
+            cmd = cmd.arg(create_arg(flag, self.ignore_required));
+        }
+
+        // Add a catch-all for positionals to allow them in strict mode
+        cmd = cmd.arg(
+            Arg::new("_positionals")
+                .action(ArgAction::Append)
+                .num_args(0..)
+                .value_parser(clap::builder::StringValueParser::new()),
+        );
+
+        let matches_res = cmd.clone().try_get_matches_from(args);
+
+        // Manual recovery for non-strict mode if clap failed or if we want to mimic koral exactly
+        let matches = match matches_res {
+            Ok(m) => m,
+            Err(e) => {
+                use clap::error::ErrorKind;
+                let msg = e.to_string();
+                if !self.strict
+                    && (e.kind() == ErrorKind::UnknownArgument
+                        || e.kind() == ErrorKind::InvalidSubcommand)
+                {
+                    // In loose mode, use ignore_errors(true)
+                    cmd.ignore_errors(true)
+                        .try_get_matches_from(args)
+                        .unwrap_or_else(|_| clap::ArgMatches::default())
+                } else {
+                    return Err(match e.kind() {
+                        ErrorKind::UnknownArgument => {
+                            // Extract flag name more robustly
+                            let flag_name = if let Some(start) = msg.find("'") {
+                                let rest = &msg[start + 1..];
+                                if let Some(end) = rest.find("'") {
+                                    &rest[..end]
+                                } else {
+                                    rest
+                                }
+                            } else {
+                                &msg
+                            };
+
+                            if flag_name.starts_with("--") {
+                                KoralError::UnknownFlag(format!("Unknown flag '{}'", flag_name))
+                            } else if flag_name.starts_with('-') && flag_name.len() == 2 {
+                                KoralError::UnknownFlag(format!(
+                                    "Unknown short flag '{}'",
+                                    &flag_name[1..]
+                                ))
+                            } else if flag_name.starts_with('-') {
+                                KoralError::UnknownFlag(format!(
+                                    "Unknown short flag in '{}'",
+                                    flag_name
+                                ))
+                            } else {
+                                KoralError::UnknownFlag(format!("Unknown flag '{}'", flag_name))
+                            }
+                        }
+                        ErrorKind::MissingRequiredArgument => KoralError::MissingArgument(msg),
+                        ErrorKind::ValueValidation => KoralError::FlagValueParseError(msg),
+                        _ => KoralError::Validation(msg),
+                    });
                 }
             }
-        }
-        None
-    }
-
-    fn parse_long_flag<'a, I>(
-        &self,
-        arg: &str,
-        iter: &mut I,
-        flags_map: &mut HashMap<String, Option<String>>,
-        positionals: &mut Vec<String>,
-    ) -> KoralResult<()>
-    where
-        I: Iterator<Item = &'a String>,
-    {
-        let arg_content = arg.trim_start_matches("--");
-
-        // Check if it's key=value
-        let (name_part, value_part) = if let Some(idx) = arg_content.find('=') {
-            (&arg_content[..idx], Some(&arg_content[idx + 1..]))
-        } else {
-            (arg_content, None)
         };
 
-        // Find matching flag
-        let mut matched_flag: Option<&crate::flag::FlagDef> = None;
-        for flag in &self.known_flags {
-            let flag_long = flag.long.as_deref().unwrap_or(&flag.name);
-            if flag_long == name_part || flag.aliases.iter().any(|a| a == name_part) {
-                matched_flag = Some(flag);
-                break;
-            }
-        }
+        let mut flags_map: HashMap<String, Option<String>> = HashMap::new();
+        let mut positionals = Vec::new();
 
-        if let Some(flag) = matched_flag {
-            if let Some(val) = value_part {
-                // --key=value
-                if flag.takes_value {
-                    flags_map.insert(flag.name.clone(), Some(val.to_string()));
-                } else {
-                    return Err(KoralError::Validation(format!(
-                        "Flag '--{}' does not take a value",
-                        flag.name
-                    )));
+        // Extract flags_map
+        for flag in &self.known_flags {
+            let id = if flag.name == "version" {
+                "koral_version"
+            } else if flag.name == "help" {
+                "koral_help"
+            } else {
+                Box::leak(flag.name.clone().into_boxed_str()) as &'static str
+            };
+
+            if flag.takes_value {
+                if let Some(val) = matches.get_one::<String>(id) {
+                    flags_map.insert(flag.name.clone(), Some(val.clone()));
+                } else if let Some(def) = &flag.default_value {
+                    flags_map.insert(flag.name.clone(), Some(def.clone()));
                 }
             } else {
-                // --key (consume next if needed)
-                self.consume_flag_value(flag, iter, flags_map)?;
-            }
-        } else {
-            // Unknown long flag
-            if self.strict {
-                // Check for typos
-                let mut msg = format!("Unknown flag '{}'", arg);
-                if let Some(sugg) = self.suggest_flag(name_part) {
-                    msg.push_str(&format!("\n\tDid you mean '{}'?", sugg));
+                if matches.get_flag(id) {
+                    flags_map.insert(flag.name.clone(), None);
                 }
-                return Err(KoralError::UnknownFlag(msg));
             }
-            positionals.push(arg.to_string());
-        }
-        Ok(())
-    }
-
-    fn parse_short_flags<'a, I>(
-        &self,
-        arg: &str,
-        iter: &mut I,
-        flags_map: &mut HashMap<String, Option<String>>,
-        positionals: &mut Vec<String>,
-    ) -> KoralResult<()>
-    where
-        I: Iterator<Item = &'a String>,
-    {
-        let char_part = arg.trim_start_matches('-');
-        let chars: Vec<char> = char_part.chars().collect();
-
-        // Check first char logic/heuristics
-        let first_char = chars[0];
-        let first_match = self.find_short_flag(first_char);
-
-        if first_match.is_none() {
-            // Check if it looks like a negative number
-            let is_number = char_part.parse::<f64>().is_ok();
-
-            if is_number {
-                positionals.push(arg.to_string());
-                return Ok(());
-            }
-
-            if self.strict {
-                return Err(KoralError::UnknownFlag(format!(
-                    "Unknown short flag '{}' in '{}'",
-                    first_char, arg
-                )));
-            }
-            // Treat as positional
-            positionals.push(arg.to_string());
-            return Ok(());
         }
 
-        // Atomic parsing for flag group
-        struct PlanItem<'p> {
-            flag: &'p crate::flag::FlagDef,
-            val: Option<String>,
+        // Extract positionals
+        if let Some(pos_matches) = matches.get_many::<String>("_positionals") {
+            for pos in pos_matches {
+                positionals.push(pos.clone());
+            }
         }
-        let mut plan: Vec<PlanItem> = Vec::new();
-        let mut valid_group = true;
-        let mut consume_next: Option<&crate::flag::FlagDef> = None;
 
-        for (i, &c) in chars.iter().enumerate() {
-            if let Some(flag) = self.find_short_flag(c) {
-                if flag.takes_value {
-                    if i < chars.len() - 1 {
-                        // Value attached
-                        let val = char_part.chars().skip(i + 1).collect::<String>();
-                        plan.push(PlanItem {
-                            flag,
-                            val: Some(val),
-                        });
-                        break; // Rest consumed
-                    } else {
-                        // Value is next arg
-                        consume_next = Some(flag);
+        // Final legacy positional recovery for non-strict mode
+        if !self.strict {
+            let mut manual_pos = Vec::new();
+            let mut i = 0;
+            while i < args.len() {
+                let arg = &args[i];
+                if arg == "--" {
+                    manual_pos.extend(args[i + 1..].iter().cloned());
+                    break;
+                }
+
+                let mut is_flag = false;
+                for flag in &self.known_flags {
+                    let long = format!("--{}", flag.long.as_deref().unwrap_or(&flag.name));
+                    let short = flag.short.map(|s| format!("-{}", s));
+                    if arg == &long || short.as_ref().map(|s| s == arg).unwrap_or(false) {
+                        is_flag = true;
+                        if flag.takes_value && i + 1 < args.len() {
+                            i += 1;
+                        }
                         break;
                     }
-                } else {
-                    // Boolean
-                    plan.push(PlanItem { flag, val: None });
                 }
-            } else {
-                // Unknown flag
-                valid_group = false;
-                if self.strict {
-                    return Err(KoralError::UnknownFlag(format!(
-                        "Unknown short flag '-{}' in group '{}'",
-                        c, arg
-                    )));
+
+                if !is_flag {
+                    if !manual_pos.contains(arg) {
+                        manual_pos.push(arg.clone());
+                    }
                 }
-                break;
+                i += 1;
             }
+            positionals = manual_pos;
         }
 
-        if valid_group {
-            // Apply plan
-            for item in plan {
-                if let Some(val) = item.val {
-                    flags_map.insert(item.flag.name.clone(), Some(val));
-                } else {
-                    flags_map.insert(item.flag.name.clone(), None);
-                }
-            }
-            if let Some(flag) = consume_next {
-                self.consume_flag_value(flag, iter, flags_map)?;
-            }
-        } else {
-            // Treated as positional in non-strict mode
-            positionals.push(arg.to_string());
-        }
-        Ok(())
-    }
+        self.apply_defaults(&mut flags_map);
 
-    fn consume_flag_value<'a, I>(
-        &self,
-        flag: &crate::flag::FlagDef,
-        iter: &mut I,
-        flags_map: &mut HashMap<String, Option<String>>,
-    ) -> KoralResult<()>
-    where
-        I: Iterator<Item = &'a String>,
-    {
-        if flag.takes_value {
-            if let Some(val) = iter.next() {
-                flags_map.insert(flag.name.clone(), Some(val.clone()));
-            } else {
-                return Err(KoralError::MissingArgument(format!(
-                    "Flag '--{}' requires a value",
-                    flag.name
-                )));
-            }
-        } else {
-            // Boolean flag
-            flags_map.insert(flag.name.clone(), None);
-        }
-        Ok(())
+        Ok(Context::new(flags_map, positionals))
     }
 
     fn apply_defaults(&self, flags_map: &mut HashMap<String, Option<String>>) {
@@ -274,103 +203,126 @@ impl Parser {
                         if flag.takes_value {
                             flags_map.insert(flag.name.clone(), Some(val));
                         } else {
-                            // For boolean flags from env/defaults
-                            // If val is "true" or non-empty/non-zero
+                            // For boolean flags, handle various string representations
                             if val != "0" && val.to_lowercase() != "false" && !val.is_empty() {
                                 flags_map.insert(flag.name.clone(), None);
+                            } else {
+                                flags_map.insert(flag.name.clone(), Some("false".to_string()));
                             }
                         }
-                        // Once found, stop checking other providers
                         break;
                     }
                 }
             }
         }
     }
-
-    fn validate_constraints(&self, flags_map: &HashMap<String, Option<String>>) -> KoralResult<()> {
-        for flag in &self.known_flags {
-            // Check required
-            if !self.ignore_required && flag.required && !flags_map.contains_key(&flag.name) {
-                return Err(KoralError::MissingArgument(format!(
-                    "Required flag '--{}' is missing",
-                    flag.name
-                )));
-            }
-
-            if let Some(validator) = flag.validator {
-                if let Some(Some(val)) = flags_map.get(&flag.name) {
-                    if let Err(e) = validator(val) {
-                        return Err(KoralError::Validation(format!(
-                            "Invalid value for flag '{}': {}",
-                            flag.name, e
-                        )));
-                    }
-                }
-            }
-        }
-        Ok(())
-    }
-
-    fn suggest_flag(&self, unknown: &str) -> Option<String> {
-        let mut best_match: Option<String> = None;
-        let mut min_dist = usize::MAX;
-
-        for flag in &self.known_flags {
-            let name = &flag.name;
-            let dist = levenshtein(unknown, name);
-            if dist < min_dist && dist <= 3 {
-                // Threshold
-                min_dist = dist;
-                best_match = Some(format!("--{}", name));
-            }
-            if let Some(short) = flag.short {
-                let s = short.to_string();
-                let dist = levenshtein(unknown, &s);
-                // Short flag usually not typo target unless it's very short input
-                if dist < min_dist && dist <= 1 {
-                    min_dist = dist;
-                    best_match = Some(format!("-{}", s));
-                }
-            }
-        }
-        best_match
-    }
 }
 
-fn levenshtein(a: &str, b: &str) -> usize {
-    let len_a = a.chars().count();
-    let len_b = b.chars().count();
-    if len_a == 0 {
-        return len_b;
-    }
-    if len_b == 0 {
-        return len_a;
+/// Helper to recursively build a clap::Command from an App.
+pub fn build_command(app: &dyn crate::traits::App) -> Command {
+    let mut cmd = Command::new(Box::leak(app.name().to_string().into_boxed_str()) as &'static str)
+        .disable_help_flag(true)
+        .disable_version_flag(true)
+        .version(Box::leak(app.version().to_string().into_boxed_str()) as &'static str)
+        .about(Box::leak(app.description().to_string().into_boxed_str()) as &'static str);
+
+    for flag in app.flags() {
+        cmd = cmd.arg(create_arg(&flag, false)); // ignore_required=false for full tree
     }
 
-    let mut matrix = vec![vec![0; len_b + 1]; len_a + 1];
-
-    for i in 0..=len_a {
-        matrix[i][0] = i;
-    }
-    for j in 0..=len_b {
-        matrix[0][j] = j;
+    for sub in app.subcommands() {
+        cmd = cmd.subcommand(build_command_from_def(&sub));
     }
 
-    for (i, ca) in a.chars().enumerate() {
-        for (j, cb) in b.chars().enumerate() {
-            let cost = if ca == cb { 0 } else { 1 };
-            matrix[i + 1][j + 1] = std::cmp::min(
-                std::cmp::min(matrix[i][j + 1] + 1, matrix[i + 1][j] + 1),
-                matrix[i][j] + cost,
-            );
+    cmd
+}
+
+fn build_command_from_def(def: &crate::command::CommandDef) -> Command {
+    let mut cmd = Command::new(Box::leak(def.name.clone().into_boxed_str()) as &'static str)
+        .about(Box::leak(def.description.clone().into_boxed_str()) as &'static str)
+        .disable_help_flag(true)
+        .disable_version_flag(true);
+
+    for alias in &def.aliases {
+        cmd = cmd.alias(Box::leak(alias.clone().into_boxed_str()) as &'static str);
+    }
+
+    for flag in &def.flags {
+        cmd = cmd.arg(create_arg(flag, false));
+    }
+
+    for sub in &def.subcommands {
+        cmd = cmd.subcommand(build_command_from_def(sub));
+    }
+
+    cmd
+}
+
+fn create_arg(flag: &crate::flag::FlagDef, ignore_required: bool) -> Arg {
+    let id = if flag.name == "version" {
+        "koral_version"
+    } else if flag.name == "help" {
+        "koral_help"
+    } else {
+        Box::leak(flag.name.clone().into_boxed_str()) as &'static str
+    };
+
+    let mut arg = Arg::new(id).help(Box::leak(flag.help.clone().into_boxed_str()) as &'static str);
+
+    if let Some(long) = &flag.long {
+        arg = arg.long(Box::leak(long.clone().into_boxed_str()) as &'static str);
+    } else {
+        arg = arg.long(Box::leak(flag.name.clone().into_boxed_str()) as &'static str);
+    }
+
+    if let Some(s) = flag.short {
+        arg = arg.short(s);
+    }
+
+    for alias in &flag.aliases {
+        arg = arg.alias(Box::leak(alias.clone().into_boxed_str()) as &'static str);
+    }
+
+    if flag.takes_value {
+        arg = arg.action(ArgAction::Set);
+        if let Some(vn) = &flag.value_name {
+            let vn_static: &'static str = Box::leak(vn.clone().into_boxed_str());
+            arg = arg.value_name(vn_static);
+
+            // Replicate koral's logic for completion hints
+            let vn_upper = vn.to_uppercase();
+            if vn_upper.contains("FILE") || vn_upper.contains("PATH") {
+                arg = arg.value_hint(clap::ValueHint::FilePath);
+            } else if vn_upper.contains("DIR") {
+                arg = arg.value_hint(clap::ValueHint::DirPath);
+            }
         }
+    } else {
+        arg = arg.action(ArgAction::SetTrue);
     }
-    matrix[len_a][len_b]
+
+    if let Some(env) = &flag.env {
+        arg = arg.env(Box::leak(env.clone().into_boxed_str()) as &'static str);
+    }
+
+    if flag.required && !ignore_required {
+        arg = arg.required(true);
+    }
+
+    if let Some(heading) = &flag.help_heading {
+        arg = arg.help_heading(Box::leak(heading.clone().into_boxed_str()) as &'static str);
+    }
+
+    if let Some(validator) = flag.validator {
+        arg = arg.value_parser(move |s: &str| -> Result<String, String> {
+            validator(s).map(|_| s.to_string())
+        });
+    }
+
+    arg
 }
 
 /// Helper function to validate required flags externally.
-/// Used by generated App code to enforce requirements only when specific action is executed.
 pub fn validate_required_flags(
     flags: &[crate::flag::FlagDef],
     flags_map: &HashMap<String, Option<String>>,

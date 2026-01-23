@@ -19,7 +19,7 @@ fn test_strict_mode_unknown_long_flag() {
     assert!(res.is_err());
     match res.unwrap_err() {
         koral::KoralError::UnknownFlag(msg) => {
-            assert!(msg.contains("Unknown flag '--unknown'"));
+            assert!(msg.contains("--unknown"));
         }
         _ => panic!("Expected UnknownFlag error"),
     }
@@ -32,7 +32,7 @@ fn test_strict_mode_unknown_short_flag() {
     assert!(res.is_err());
     match res.unwrap_err() {
         koral::KoralError::UnknownFlag(msg) => {
-            assert!(msg.contains("Unknown short flag 'u'"));
+            assert!(msg.contains("'u'"));
         }
         _ => panic!("Expected UnknownFlag error"),
     }

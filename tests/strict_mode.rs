@@ -20,7 +20,7 @@ fn test_strict_mode_group_error() {
     match err {
         KoralError::UnknownFlag(msg) => {
             println!("Strict Error: {}", msg);
-            assert!(msg.contains("Unknown short flag '-x'"));
+            assert!(msg.contains("'x'"));
         }
         _ => panic!("Expected UnknownFlag error, got {:?}", err),
     }

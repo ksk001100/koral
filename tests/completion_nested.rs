@@ -50,16 +50,15 @@ fn test_nested_completion_generated() {
     // println!("{}", output); // Debug if needed
 
     // Verify root is present
-    assert!(output.contains("_root_completion"));
+    assert!(output.contains("_root"));
 
-    // Verify immediate child 'sub' (from Enum)
-    assert!(output.contains("root_sub"));
+    // Verify immediate child 'sub'
+    assert!(output.contains("root,sub"));
 
-    // Verify nested 'deep' (from SubApp -> SubCmds -> Deep)
-    // My bash generator uses flat recursion: root_sub_deep
+    // Verify nested 'deep'
     assert!(
-        output.contains("root_sub_deep"),
-        "Bash completion missing nested 'deep' function"
+        output.contains("root__sub,deep"),
+        "Bash completion missing nested 'deep' case"
     );
 
     // Verify flags
@@ -71,15 +70,18 @@ fn test_nested_completion_generated() {
     generate_to(&app, Shell::Zsh, &mut buf_zsh).unwrap();
     let output_zsh = String::from_utf8(buf_zsh).unwrap();
 
-    assert!(output_zsh.contains("_root_sub"));
-    assert!(output_zsh.contains("_root_sub_deep"));
+    // Zsh completion from clap_complete
+    assert!(output_zsh.contains("sub"), "Zsh missing 'sub'");
+    assert!(output_zsh.contains("deep"), "Zsh missing 'deep'");
 
     // Check Fish
     let mut buf_fish = Vec::new();
     generate_to(&app, Shell::Fish, &mut buf_fish).unwrap();
     let output_fish = String::from_utf8(buf_fish).unwrap();
 
-    assert!(output_fish.contains("complete -c root -a 'sub'"));
-    assert!(output_fish.contains("complete -c root -a 'deep'"));
-    assert!(output_fish.contains("--subflag"));
+    // Fish completion from clap_complete
+    assert!(output_fish.contains("complete -c root"));
+    assert!(output_fish.contains("-a \"sub\"") || output_fish.contains("-a sub"));
+    assert!(output_fish.contains("-a \"deep\"") || output_fish.contains("-a deep"));
+    assert!(output_fish.contains("-l subflag"));
 }

@@ -30,7 +30,7 @@ fn test_bash_completion() {
     generate_to(&app, Shell::Bash, &mut buf).unwrap();
 
     let output = String::from_utf8(buf).unwrap();
-    assert!(output.contains("_myprog_completion()")); // Bash function convention
+    assert!(output.contains("_myprog")); // clap_complete uses _myprog
     assert!(output.contains("--verbose"));
     assert!(output.contains("--user"));
     assert!(output.contains("-v"));

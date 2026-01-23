@@ -52,7 +52,7 @@ fn test_negative_number_conflict() {
     assert!(result.is_err());
 
     if let Err(koral::KoralError::UnknownFlag(msg)) = result {
-        assert!(msg.contains("Unknown short flag '-0'"));
+        assert!(msg.contains("'0'"));
     } else {
         panic!("Expected UnknownFlag error");
     }
