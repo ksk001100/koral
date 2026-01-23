@@ -219,15 +219,30 @@ impl Parser {
 }
 
 /// Helper to recursively build a clap::Command from an App.
-pub fn build_command(app: &dyn crate::traits::App) -> Command {
+pub fn build_command<T: crate::traits::App + ?Sized>(app: &T) -> Command {
+    let flags = app.flags();
+    let has_v_long = flags
+        .iter()
+        .any(|f| f.long.as_deref() == Some("version") || (f.long.is_none() && f.name == "version"));
+    let has_v_short = flags.iter().any(|f| f.short == Some('V'));
+    let has_h_long = flags
+        .iter()
+        .any(|f| f.long.as_deref() == Some("help") || (f.long.is_none() && f.name == "help"));
+    let has_h_short = flags.iter().any(|f| f.short == Some('h'));
+
     let mut cmd = Command::new(Box::leak(app.name().to_string().into_boxed_str()) as &'static str)
-        .disable_help_flag(true)
-        .disable_version_flag(true)
         .version(Box::leak(app.version().to_string().into_boxed_str()) as &'static str)
         .about(Box::leak(app.description().to_string().into_boxed_str()) as &'static str);
 
-    for flag in app.flags() {
-        cmd = cmd.arg(create_arg(&flag, false)); // ignore_required=false for full tree
+    if has_v_long || has_v_short {
+        cmd = cmd.disable_version_flag(true);
+    }
+    if has_h_long || has_h_short {
+        cmd = cmd.disable_help_flag(true);
+    }
+
+    for flag in &flags {
+        cmd = cmd.arg(create_arg(flag, false));
     }
 
     for sub in app.subcommands() {
@@ -238,13 +253,25 @@ pub fn build_command(app: &dyn crate::traits::App) -> Command {
 }
 
 fn build_command_from_def(def: &crate::command::CommandDef) -> Command {
-    let mut cmd = Command::new(Box::leak(def.name.clone().into_boxed_str()) as &'static str)
-        .about(Box::leak(def.description.clone().into_boxed_str()) as &'static str)
-        .disable_help_flag(true)
-        .disable_version_flag(true);
+    let has_v_long = def
+        .flags
+        .iter()
+        .any(|f| f.long.as_deref() == Some("version") || (f.long.is_none() && f.name == "version"));
+    let has_v_short = def.flags.iter().any(|f| f.short == Some('V'));
+    let has_h_long = def
+        .flags
+        .iter()
+        .any(|f| f.long.as_deref() == Some("help") || (f.long.is_none() && f.name == "help"));
+    let has_h_short = def.flags.iter().any(|f| f.short == Some('h'));
 
-    for alias in &def.aliases {
-        cmd = cmd.alias(Box::leak(alias.clone().into_boxed_str()) as &'static str);
+    let mut cmd = Command::new(Box::leak(def.name.clone().into_boxed_str()) as &'static str)
+        .about(Box::leak(def.description.clone().into_boxed_str()) as &'static str);
+
+    if has_v_long || has_v_short {
+        cmd = cmd.disable_version_flag(true);
+    }
+    if has_h_long || has_h_short {
+        cmd = cmd.disable_help_flag(true);
     }
 
     for flag in &def.flags {

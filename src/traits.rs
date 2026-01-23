@@ -71,47 +71,25 @@ pub trait App {
         state: &mut dyn std::any::Any,
         args: Vec<String>,
     ) -> KoralResult<()> {
-        // Check for help flag, but respect subcommands
-        let flags = self.flags();
-        let h_overridden = flags.iter().any(|f| f.short == Some('h'));
-
-        let help_invoked = args.iter().position(|a| {
-            if a == "--help" {
-                true
-            } else if a == "-h" {
-                !h_overridden
-            } else {
-                false
-            }
-        });
-        let subcommands = self.subcommands();
-
-        let should_print_help = if let Some(h_idx) = help_invoked {
-            // Check if a known subcommand appears BEFORE help
-            // args[0] is prog name, start checking from 1
-            let sub_idx = args.iter().enumerate().skip(1).find_map(|(i, arg)| {
-                if subcommands.iter().any(|s| s.name == *arg) {
-                    Some(i)
-                } else {
-                    None
+        // Pre-flight check for help/version using the full tree
+        let mut cmd = crate::parser::build_command(self);
+        if let Err(e) = cmd.try_get_matches_from_mut(&args) {
+            match e.kind() {
+                clap::error::ErrorKind::DisplayHelp | clap::error::ErrorKind::DisplayVersion => {
+                    e.print().expect("Failed to print help/version");
+                    return Ok(());
                 }
-            });
-
-            match sub_idx {
-                Some(s_idx) => h_idx < s_idx, // Print help only if help appears BEFORE subcommand
-                None => true,                 // No subcommand, help invoked -> print help
+                _ => {} // Ignore other errors, they will be handled by the specific level parser
             }
-        } else {
-            false
-        };
-
-        if should_print_help {
-            self.print_help();
-            return Ok(());
         }
 
-        // Parse arguments
-        let (mut flags_map, mut positionals) = {
+        let flags = self.flags();
+        let h_overridden = flags.iter().any(|f| f.short == Some('h'));
+        let skip_middleware = args
+            .iter()
+            .any(|a| a == "--help" || (a == "-h" && !h_overridden));
+
+        let ctx = {
             let parser = crate::parser::Parser::new(self.flags())
                 .strict(self.is_strict())
                 .ignore_required(true);
@@ -121,18 +99,12 @@ pub trait App {
             } else {
                 &args[..]
             };
-            let ctx = parser.parse(args_to_parse)?;
-            (ctx.flags, ctx.args)
+            parser.parse(args_to_parse)?
         };
-
-        if flags_map.contains_key("version") {
-            println!("{} version {}", self.name(), self.version());
-            return Ok(());
-        }
+        let mut flags_map = ctx.flags;
+        let mut positionals = ctx.args;
 
         let middlewares = self.middlewares();
-        let skip_middleware = help_invoked.is_some();
-
         let mut extensions = std::collections::HashMap::new();
 
         // Execute Middleware 'before' hooks
@@ -172,50 +144,25 @@ pub trait App {
     /// Run the application with the given arguments.
     /// This handles common tasks like help and version checks, and argument parsing.
     fn run(&mut self, args: Vec<String>) -> KoralResult<()> {
-        // Check for help flag, but respect subcommands
-        let flags = self.flags();
-        let h_overridden = flags.iter().any(|f| f.short == Some('h'));
-
-        let help_invoked = args.iter().position(|a| {
-            if a == "--help" {
-                true
-            } else if a == "-h" {
-                !h_overridden
-            } else {
-                false
-            }
-        });
-        let subcommands = self.subcommands();
-
-        let should_print_help = if let Some(h_idx) = help_invoked {
-            // Check if a known subcommand appears BEFORE help
-            // args[0] is prog name, start checking from 1
-            let sub_idx = args.iter().enumerate().skip(1).find_map(|(i, arg)| {
-                if subcommands
-                    .iter()
-                    .any(|s| s.name == *arg || s.aliases.contains(arg))
-                {
-                    Some(i)
-                } else {
-                    None
+        // Pre-flight check for help/version using the full tree
+        let mut cmd = crate::parser::build_command(self);
+        if let Err(e) = cmd.try_get_matches_from_mut(&args) {
+            match e.kind() {
+                clap::error::ErrorKind::DisplayHelp | clap::error::ErrorKind::DisplayVersion => {
+                    e.print().expect("Failed to print help/version");
+                    return Ok(());
                 }
-            });
-
-            match sub_idx {
-                Some(s_idx) => h_idx < s_idx, // Print help only if help appears BEFORE subcommand
-                None => true,                 // No subcommand, help invoked -> print help
+                _ => {} // Ignore other errors, they will be handled by the specific level parser
             }
-        } else {
-            false
-        };
-
-        if should_print_help {
-            self.print_help();
-            return Ok(());
         }
 
-        // Parse arguments
-        let (mut flags_map, mut positionals) = {
+        let flags = self.flags();
+        let h_overridden = flags.iter().any(|f| f.short == Some('h'));
+        let skip_middleware = args
+            .iter()
+            .any(|a| a == "--help" || (a == "-h" && !h_overridden));
+
+        let ctx = {
             let parser = crate::parser::Parser::new(self.flags())
                 .strict(self.is_strict())
                 .ignore_required(true);
@@ -225,18 +172,12 @@ pub trait App {
             } else {
                 &args[1..]
             };
-            let ctx = parser.parse(args_to_parse)?;
-            (ctx.flags, ctx.args)
+            parser.parse(args_to_parse)?
         };
-
-        if flags_map.contains_key("version") {
-            println!("{} version {}", self.name(), self.version());
-            return Ok(());
-        }
+        let mut flags_map = ctx.flags;
+        let mut positionals = ctx.args;
 
         let middlewares = self.middlewares();
-        let skip_middleware = help_invoked.is_some();
-
         let mut extensions = std::collections::HashMap::new();
 
         if !skip_middleware {
@@ -269,6 +210,7 @@ pub trait App {
 
     /// Print help message to stdout.
     fn print_help(&self) {
-        print!("{}", crate::help::generate_help(self));
+        let mut cmd = crate::parser::build_command(self);
+        cmd.print_help().expect("Failed to print help");
     }
 }
