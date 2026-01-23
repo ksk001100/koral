@@ -184,6 +184,18 @@ impl Parser {
     }
 }
 
+fn get_styles() -> clap::builder::Styles {
+    use clap::builder::styling::{AnsiColor, Effects, Styles};
+    Styles::styled()
+        .header(AnsiColor::Green.on_default().effects(Effects::BOLD))
+        .usage(AnsiColor::Green.on_default().effects(Effects::BOLD))
+        .literal(AnsiColor::Cyan.on_default().effects(Effects::BOLD))
+        .placeholder(AnsiColor::Cyan.on_default())
+        .error(AnsiColor::Red.on_default().effects(Effects::BOLD))
+        .valid(AnsiColor::Green.on_default().effects(Effects::BOLD))
+        .invalid(AnsiColor::Red.on_default().effects(Effects::BOLD))
+}
+
 /// Helper to recursively build a clap::Command from an App.
 pub fn build_command<T: crate::traits::App + ?Sized>(app: &T) -> Command {
     let flags = app.flags();
@@ -196,7 +208,9 @@ pub fn build_command<T: crate::traits::App + ?Sized>(app: &T) -> Command {
 
     let mut cmd = Command::new(Box::leak(app.name().to_string().into_boxed_str()) as &'static str)
         .version(Box::leak(app.version().to_string().into_boxed_str()) as &'static str)
-        .about(Box::leak(app.description().to_string().into_boxed_str()) as &'static str);
+        .about(Box::leak(app.description().to_string().into_boxed_str()) as &'static str)
+        .styles(get_styles())
+        .color(clap::ColorChoice::Always);
 
     if conflict_v {
         cmd = cmd.disable_version_flag(true);
@@ -232,7 +246,9 @@ fn build_command_from_def(def: &crate::command::CommandDef) -> Command {
         .any(|f| (f.short == Some('h') || f.long.as_deref() == Some("help")) && f.name != "help");
 
     let mut cmd = Command::new(Box::leak(def.name.clone().into_boxed_str()) as &'static str)
-        .about(Box::leak(def.description.clone().into_boxed_str()) as &'static str);
+        .about(Box::leak(def.description.clone().into_boxed_str()) as &'static str)
+        .styles(get_styles())
+        .color(clap::ColorChoice::Always);
 
     if conflict_v {
         cmd = cmd.disable_version_flag(true);

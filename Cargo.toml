@@ -20,7 +20,7 @@ members = [
 [dependencies]
 anstream = "0.6.21"
 anstyle = "1.0.13"
-clap = { version = "4.5", features = ["env", "string"] }
+clap = { version = "4.5", features = ["env", "string", "color"] }
 clap_complete = "4.5"
 clap_mangen = "0.2.26"
 koral_derive = { path = "koral_derive" }
